@@ -138,8 +138,10 @@ class Disamby(object):
             'log': self._smooth_log
         }
         if smoother not in smoothers:
-            raise KeyError(f'Chosen smother `{smoother}` is not one of '
-                           f'{smoothers.keys()}')
+            raise KeyError(
+                'Chosen smother `{}` is not one of {}'.format(
+                    smoother, smoothers.keys())
+            )
         counter = self.field_freq[field]
 
         s_fun = smoothers[smoother]

@@ -41,7 +41,7 @@ class Disamby(object):
 
         self.field_freq[field] = counter
 
-    def score_df(self, index, data_frame: DataFrame, smoother=None, offset=0):
+    def score_df(self, index, data_frame: DataFrame, weight=None, smoother=None, offset=0):
         """
         For the given term compute the score given the dataframe
         The column names of the dataframe are assumed to be the fields you
@@ -52,6 +52,10 @@ class Disamby(object):
         index :
             index of the entry you want to filter on
         data_frame
+        weight : dict
+            dict of the form {field1: w1, field2: w2}
+            the weight is is the weight to associate to the field in the final
+            score, defaults to 1/n
         smoother : str (optional)
             one of {None, 'offset', 'log'}
         offset : int
@@ -65,20 +69,31 @@ class Disamby(object):
         fields = data_frame.columns
         own_record = data_frame.loc[index]
 
+        if set(fields) != set(self.field_freq.keys()):
+            raise ValueError("Not all fields have been fitted (i.e. computed"
+                             "their frequency.")
+
+        if weight is None:
+            weight = {f: 1/len(fields) for f in fields}
+
         def scoring_fun(record):
-            score = 0
+            total_score = 0
             for field in fields:
-                score += self.score(own_record[field],
+                score = self.score(own_record[field],
                                     record[field], field,
                                     smoother=smoother,
                                     offset=offset)
-            return score / len(fields)
+                score *= weight[field]
+                total_score += score
+            return total_score
 
         return data_frame.apply(scoring_fun, axis=1)
 
     def score(self, term: str, other_term: str, field: str,
               smoother=None, offset=0,) -> float:
-        """Computes the score between the two strings using the frequency data
+        """
+        Computes the score between the two strings using the frequency data
+
         Parameters
         ----------
         term : str

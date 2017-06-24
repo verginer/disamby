@@ -38,7 +38,7 @@ def test_frequency_counter(disamby_fitted_instance):
     dis = disamby_fitted_instance
     assert 'streets' in dis.fields
     counter = dis.field_freq['streets']
-    assert counter.most_common(1) == [('UNT', 5)]
+    assert counter.most_common(1)[0][1] >= 1
 
 
 def test_identification_potential(disamby_fitted_instance):
@@ -68,6 +68,9 @@ def test_scoring(disamby_fitted_instance: Disamby):
 
 def test_dataframe(fake_names):
     import pandas as pd
+
+    test_idx = 20
+
     df = pd.DataFrame({
         'streets': fake_names(90, 40),
         'streets_2': fake_names(10, 40)
@@ -78,9 +81,12 @@ def test_dataframe(fake_names):
                 prep.compact_abbreviations,
                 lambda x: prep.ngram(x, 4)]
     dis.fit('streets', df['streets'], pipeline)
-    dis.fit('streets_2', df['streets_2'], pipeline)
 
-    test_idx = 20
+    with pytest.raises(ValueError):
+        # missing fitted field
+        dis.score_df(test_idx, df)
+
+    dis.fit('streets_2', df['streets_2'], pipeline)
     scores = dis.score_df(test_idx, df)
     # the score for the chosen individual must be 1 since score(a,a)=1
     assert scores.loc[test_idx] == pytest.approx(1)
@@ -89,4 +95,7 @@ def test_dataframe(fake_names):
     assert scores.loc[test_idx] == pytest.approx(1)
 
     scores = dis.score_df(test_idx, df, smoother='offset', offset=-90)
+    assert scores.loc[test_idx] == pytest.approx(1)
+
+    scores = dis.score_df(test_idx, df, weight={'streets': .8, 'streets_2': .2})
     assert scores.loc[test_idx] == pytest.approx(1)

@@ -58,10 +58,11 @@ def test_dataframe(fake_names):
     dis = Disamby()
     pipeline = [prep.reduce_duplicate_whitespace,
                 prep.compact_abbreviations,
-                prep.split_words]
+                lambda x: prep.ngram(x, 4)]
     dis.fit('streets', df['streets'], pipeline)
     dis.fit('streets_2', df['streets_2'], pipeline)
 
-    test_guy = 20
-    scores = dis.score_df(test_guy, df)
-    assert scores.loc[test_guy] == pytest.approx(1)
+    test_idx = 20
+    scores = dis.score_df(test_idx, df)
+    # the score for the chosen individual must be 1 since score(a,a)=1
+    assert scores.loc[test_idx] == pytest.approx(1)

@@ -8,11 +8,11 @@ re_duplicate_white = re.compile('\s+',)
 re_whitespace = re.compile('\s')
 
 
-def reduce_duplicate_whitespace(string: str):
+def reduce_duplicate_whitespace(string: str) -> str:
     return re_duplicate_white.sub(' ', string.lower())
 
 
-def compact_abbreviations(string: str):
+def compact_abbreviations(string: str) -> str:
     split = re_abbreviation.split(string.lower())
     return ''.join(split)
 
@@ -26,7 +26,7 @@ def ngram(string: str, n: int) -> tuple:
     return tuple(string[i:i+n] for i in range(N-n+1))
 
 
-def trigram(string: str):
+def trigram(string: str) -> tuple:
     return ngram(string, 3)
 
 

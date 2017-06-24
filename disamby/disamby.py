@@ -2,7 +2,6 @@
 
 """Main module."""
 from collections import Counter
-from pandas import DataFrame
 from math import log
 
 
@@ -41,7 +40,7 @@ class Disamby(object):
 
         self.field_freq[field] = counter
 
-    def score_df(self, index, data_frame: DataFrame, weight=None,
+    def score_df(self, index, data_frame, weight=None,
                  smoother=None, offset=0):
         """
         For the given term compute the score given the dataframe

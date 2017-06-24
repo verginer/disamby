@@ -10,6 +10,6 @@ Sphinx==1.6.2
 pytest==3.1.2
 pytest-runner==2.11.1
 faker==0.7.17
-pandas
+pandas==0.20.2
 jellyfish
 sphinxcontrib-napoleon

@@ -10,3 +10,5 @@ Sphinx
 pytest
 pytest-runner
 faker
+pandas
+sphinxcontrib-napoleon

@@ -5,8 +5,10 @@
 import pytest
 from pytest import mark
 
-from disamby import Disamby
-from disamby.preprocessors import *
+from disamby.preprocessors import compact_abbreviations
+from disamby.preprocessors import split_words
+from disamby.preprocessors import reduce_duplicate_whitespace
+from disamby.preprocessors import ngram
 
 
 @mark.parametrize('raw,expected', [

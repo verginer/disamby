@@ -7,7 +7,6 @@ from pandas import DataFrame
 
 class Disamby(object):
     def __init__(self):
-        self.fields = None
         self.field_freq = dict()
         self.preprocessors = dict()
 
@@ -59,7 +58,7 @@ class Disamby(object):
                 score += weights[i]
         return score
 
-    def score_df(self, term: str, data_frame: DataFrame):
+    def score_df(self, index, data_frame: DataFrame):
         """
         For the given term compute the score given the dataframe
         The column names of the dataframe are assumed to be the fields you
@@ -67,16 +66,25 @@ class Disamby(object):
 
         Parameters
         ----------
-        term
+        index :
+            index of the entry you want to filter on
         data_frame
 
         Returns
         -------
-
+        DataFrame
         """
 
-        # fields = data_frame.columns
-        pass
+        fields = data_frame.columns
+        own_record = data_frame.loc[index]
+
+        def scoring_fun(record):
+            score = 0
+            for field in fields:
+                score += self.score(own_record[field], record[field], field)
+            return score / len(fields)
+
+        return data_frame.apply(scoring_fun, axis=1)
 
     @staticmethod
     def pre_process(base_name, functions: list):
@@ -84,3 +92,7 @@ class Disamby(object):
         for f in functions:
             norm_name = f(norm_name)
         return norm_name
+
+    @property
+    def fields(self):
+        return self.field_freq.keys()

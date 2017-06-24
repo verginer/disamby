@@ -4,4 +4,6 @@ Usage
 
 To use disamby in a project::
 
-    import disamby
+    from disamby import Disamby
+    dis = Disamby()
+

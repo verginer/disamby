@@ -1,5 +1,4 @@
 import re
-from functools import reduce
 
 __all__ = ['compact_abbreviations', 'reduce_duplicate_whitespace',
            'ngram', 'trigram', 'split_words']

@@ -18,7 +18,7 @@ requirements = [
 
 setup_requirements = [
     'pytest-runner',
-    # TODO(verginer): put setup requirements (distutils extensions, etc.) here
+    'faker'
 ]
 
 test_requirements = [

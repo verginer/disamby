@@ -47,14 +47,27 @@ def test_identification_potential(disamby_fitted_instance):
 def test_scoring(disamby_fitted_instance: Disamby):
     dis = disamby_fitted_instance
     score = dis.score('street george suit', 'suit street', 'streets')
-    assert score == pytest.approx(0.6)
+    assert score == pytest.approx(2 / 3)
+
+    score = dis.score('street george suit', 'suit street', 'streets',
+                      smoother='offset', offset=1000)
+    assert score <= 2 / 3
+
+    score = dis.score('street george suit', 'suit street', 'streets',
+                      smoother='log', offset=10000)
+    assert score <= 2 / 3
+
+    with pytest.raises(KeyError):
+        dis.score('street george suit', 'suit street', 'streets',
+                          smoother='mambo', offset=10000)
 
 
 def test_dataframe(fake_names):
     import pandas as pd
-    df = pd.DataFrame({'streets': fake_names(90, 40),
-                       'streets_2': fake_names(10, 40)
-                       })
+    df = pd.DataFrame({
+        'streets': fake_names(90, 40),
+        'streets_2': fake_names(10, 40)
+    })
     dis = Disamby()
     pipeline = [prep.reduce_duplicate_whitespace,
                 prep.compact_abbreviations,
@@ -65,4 +78,10 @@ def test_dataframe(fake_names):
     test_idx = 20
     scores = dis.score_df(test_idx, df)
     # the score for the chosen individual must be 1 since score(a,a)=1
+    assert scores.loc[test_idx] == pytest.approx(1)
+
+    scores = dis.score_df(test_idx, df, smoother='log', offset=90)
+    assert scores.loc[test_idx] == pytest.approx(1)
+
+    scores = dis.score_df(test_idx, df, smoother='offset', offset=-90)
     assert scores.loc[test_idx] == pytest.approx(1)

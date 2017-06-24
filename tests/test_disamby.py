@@ -7,6 +7,7 @@ from faker import Faker
 
 from disamby import Disamby
 import disamby.preprocessors as prep
+from jellyfish import metaphone
 
 
 @pytest.fixture
@@ -22,8 +23,11 @@ def fake_names():
 @pytest.fixture
 def disamby_fitted_instance(fake_names):
     names = fake_names(90, 20)
-    pipeline = [prep.reduce_duplicate_whitespace,
+    pipeline = [prep.normalize_whitespace,
+                prep.remove_punctuation,
                 prep.compact_abbreviations,
+                metaphone,
+                prep.normalize_whitespace,
                 prep.split_words]
     dis = Disamby()
     dis.fit('streets', names, pipeline)
@@ -34,28 +38,28 @@ def test_frequency_counter(disamby_fitted_instance):
     dis = disamby_fitted_instance
     assert 'streets' in dis.fields
     counter = dis.field_freq['streets']
-    assert counter.most_common(1) == [('unit', 5)]
+    assert counter.most_common(1) == [('UNT', 5)]
 
 
 def test_identification_potential(disamby_fitted_instance):
     dis = disamby_fitted_instance
 
-    weights = dis.identification_weight(('st', 'street', 'suite'), 'streets')
+    weights = dis.id_potential(('st', 'street', 'suite'), 'streets')
     assert sum(weights) == pytest.approx(1)
 
 
 def test_scoring(disamby_fitted_instance: Disamby):
     dis = disamby_fitted_instance
     score = dis.score('street george suit', 'suit street', 'streets')
-    assert score == pytest.approx(2 / 3)
+    assert score == pytest.approx(.5454545454545454)
 
     score = dis.score('street george suit', 'suit street', 'streets',
                       smoother='offset', offset=1000)
-    assert score <= 2 / 3
+    assert score > 0.66
 
     score = dis.score('street george suit', 'suit street', 'streets',
                       smoother='log', offset=10000)
-    assert score <= 2 / 3
+    assert score <= .55
 
     with pytest.raises(KeyError):
         dis.score('street george suit', 'suit street', 'streets',
@@ -69,7 +73,8 @@ def test_dataframe(fake_names):
         'streets_2': fake_names(10, 40)
     })
     dis = Disamby()
-    pipeline = [prep.reduce_duplicate_whitespace,
+    pipeline = [prep.normalize_whitespace,
+                prep.remove_punctuation,
                 prep.compact_abbreviations,
                 lambda x: prep.ngram(x, 4)]
     dis.fit('streets', df['streets'], pipeline)

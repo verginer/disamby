@@ -1,19 +1,22 @@
 import re
 
-__all__ = ['compact_abbreviations', 'reduce_duplicate_whitespace',
-           'ngram', 'trigram', 'split_words']
+__all__ = ['compact_abbreviations', 'normalize_whitespace',
+           'ngram', 'trigram', 'split_words', 'remove_punctuation']
+
 
 re_abbreviation = re.compile(r'\.(?![a-zA-Z]*})')
-re_duplicate_white = re.compile('\s+',)
+re_duplicate_white = re.compile('\s+')
 re_whitespace = re.compile('\s')
+re_punctuation = re.compile('[^\w\s]')
 
 
-def reduce_duplicate_whitespace(string: str) -> str:
-    return re_duplicate_white.sub(' ', string.lower())
+def normalize_whitespace(string: str) -> str:
+    no_whitespace = re_duplicate_white.sub(' ', string.upper())
+    return no_whitespace.strip()
 
 
 def compact_abbreviations(string: str) -> str:
-    split = re_abbreviation.split(string.lower())
+    split = re_abbreviation.split(string.upper())
     return ''.join(split)
 
 
@@ -32,3 +35,9 @@ def trigram(string: str) -> tuple:
 
 def split_words(string: str) -> tuple:
     return tuple(re_whitespace.split(string))
+
+
+def remove_punctuation(word: str) -> str:
+    return re_punctuation.sub('', word)
+
+

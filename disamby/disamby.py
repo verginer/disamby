@@ -41,8 +41,78 @@ class Disamby(object):
 
         self.field_freq[field] = counter
 
-    def identification_weight(self, words: tuple, field: str,
-                              smoother: str=None, offset=0) -> tuple:
+    def score_df(self, index, data_frame: DataFrame, smoother=None, offset=0):
+        """
+        For the given term compute the score given the dataframe
+        The column names of the dataframe are assumed to be the fields you
+        are interested in
+
+        Parameters
+        ----------
+        index :
+            index of the entry you want to filter on
+        data_frame
+        smoother : str (optional)
+            one of {None, 'offset', 'log'}
+        offset : int
+            offset to add to count only needed for smoothers 'log' and 'offset'
+
+        Returns
+        -------
+        DataFrame
+        """
+
+        fields = data_frame.columns
+        own_record = data_frame.loc[index]
+
+        def scoring_fun(record):
+            score = 0
+            for field in fields:
+                score += self.score(own_record[field],
+                                    record[field], field,
+                                    smoother=smoother,
+                                    offset=offset)
+            return score / len(fields)
+
+        return data_frame.apply(scoring_fun, axis=1)
+
+    def score(self, term: str, other_term: str, field: str,
+              smoother=None, offset=0,) -> float:
+        """Computes the score between the two strings using the frequency data
+        Parameters
+        ----------
+        term : str
+            term to search for
+        other_term : str
+            the other term to compare too
+        field : str
+            the name of the column to which this term belongs
+        smoother : str (optional)
+            one of {None, 'offset', 'log'}
+        offset : int
+            offset to add to count only needed for smoothers 'log' and 'offset'
+
+        Returns
+        -------
+        float
+
+        Notes
+        -----
+        The score is not commutative (i.e. c(A,B)!=C(B,A))
+        """
+        funcs = self.preprocessors[field]
+        own_parts = self.pre_process(term, funcs)
+        other_parts = self.pre_process(other_term, funcs)
+
+        weights = self.id_potential(own_parts, field, smoother, offset)
+        score = 0
+        for i, own in enumerate(own_parts):
+            if own in other_parts:
+                score += weights[i]
+        return score
+
+    def id_potential(self, words: tuple, field: str,
+                     smoother: str=None, offset=0) -> tuple:
         """
         Computes the weights of the words based on the observed frequency
         and normalized.
@@ -81,76 +151,6 @@ class Disamby(object):
         total_weight = sum(id_potentials)
         return tuple(idp/total_weight for idp in id_potentials)
 
-    def score(self, term: str, other_term: str, field: str,
-              smoother=None, offset=0,) -> float:
-        """Computes the score between the two strings using the frequency data
-        Parameters
-        ----------
-        term : str
-            term to search for
-        other_term : str
-            the other term to compare too
-        field : str
-            the name of the column to which this term belongs
-        smoother : str (optional)
-            one of {None, 'offset', 'log'}
-        offset : int
-            offset to add to count only needed for smoothers 'log' and 'offset'
-
-        Returns
-        -------
-        float
-
-        Notes
-        -----
-        The score is not commutative (i.e. c(A,B)!=C(B,A))
-        """
-        funcs = self.preprocessors[field]
-        own_parts = self.pre_process(term, funcs)
-        other_parts = self.pre_process(other_term, funcs)
-
-        weights = self.identification_weight(own_parts, field, smoother, offset)
-        score = 0
-        for i, own in enumerate(own_parts):
-            if own in other_parts:
-                score += weights[i]
-        return score
-
-    def score_df(self, index, data_frame: DataFrame, smoother=None, offset=0):
-        """
-        For the given term compute the score given the dataframe
-        The column names of the dataframe are assumed to be the fields you
-        are interested in
-
-        Parameters
-        ----------
-        index :
-            index of the entry you want to filter on
-        data_frame
-        smoother : str (optional)
-            one of {None, 'offset', 'log'}
-        offset : int
-            offset to add to count only needed for smoothers 'log' and 'offset'
-
-        Returns
-        -------
-        DataFrame
-        """
-
-        fields = data_frame.columns
-        own_record = data_frame.loc[index]
-
-        def scoring_fun(record):
-            score = 0
-            for field in fields:
-                score += self.score(own_record[field],
-                                    record[field], field,
-                                    smoother=smoother,
-                                    offset=offset)
-            return score / len(fields)
-
-        return data_frame.apply(scoring_fun, axis=1)
-
     @staticmethod
     def pre_process(base_name, functions: list):
         """apply every function consecutively to base_name"""
@@ -163,7 +163,6 @@ class Disamby(object):
     def fields(self):
         return self.field_freq.keys()
 
-    # SMOOTHING functions
     @staticmethod
     def _smooth_none(occurrences, *args):
         return 1/max(occurrences, 1)

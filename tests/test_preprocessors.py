@@ -7,21 +7,22 @@ from pytest import mark
 
 from disamby.preprocessors import compact_abbreviations
 from disamby.preprocessors import split_words
-from disamby.preprocessors import reduce_duplicate_whitespace
+from disamby.preprocessors import normalize_whitespace
+from disamby.preprocessors import remove_punctuation
 from disamby.preprocessors import ngram
 
 
 @mark.parametrize('raw,expected', [
-    ('this is a   long  string', 'this is a long string'),
-    ('this has a \tbut', 'this has a but',)
+    ('this is a   long  string', 'THIS IS A LONG STRING'),
+    ('this has a \tb', 'THIS HAS A B',)
 ])
 def test_reduce_duplicate_whitespace(raw, expected):
-    assert reduce_duplicate_whitespace(raw) == expected
+    assert normalize_whitespace(raw) == expected
 
 
 @mark.parametrize('raw,expected', [
-    ('this is i.b.m', 'this is ibm'),
-    ('an other A.B.M this', 'an other abm this')
+    ('this is i.b.m', 'THIS IS IBM'),
+    ('an other A.B.M this', 'AN OTHER ABM THIS')
 ])
 def test_compact_abbreviations(raw, expected):
     assert compact_abbreviations(raw) == expected
@@ -51,13 +52,16 @@ def test_split_words():
     assert len(words) == 1
 
 
+def test_remove_punctuation():
+    assert remove_punctuation('.has a .few!') == 'has a few'
+
 @mark.parametrize('raw,expected', [
-    ('this Ias I.B.M', ('this', 'his ', 'is i', 's ia',
-                        ' ias', 'ias ', 'as i', 's ib', ' ibm')
+    ('this Ias I.B.M',
+     ('THIS', 'HIS ', 'IS I', 'S IA', ' IAS', 'IAS ', 'AS I', 'S IB', ' IBM')
      )
 ])
 def test_combined_preprocessors(raw, expected):
-    reduced = reduce_duplicate_whitespace(raw)
+    reduced = normalize_whitespace(raw)
     abbreviated = compact_abbreviations(reduced)
     trigram = ngram(abbreviated, 4)
     assert trigram == expected

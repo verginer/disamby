@@ -11,4 +11,5 @@ pytest
 pytest-runner
 faker
 pandas
+jellyfish
 sphinxcontrib-napoleon

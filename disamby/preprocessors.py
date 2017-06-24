@@ -39,5 +39,3 @@ def split_words(string: str) -> tuple:
 
 def remove_punctuation(word: str) -> str:
     return re_punctuation.sub('', word)
-
-

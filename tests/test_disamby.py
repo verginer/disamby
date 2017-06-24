@@ -63,7 +63,7 @@ def test_scoring(disamby_fitted_instance: Disamby):
 
     with pytest.raises(KeyError):
         dis.score('street george suit', 'suit street', 'streets',
-                          smoother='mambo', offset=10000)
+                  smoother='mambo', offset=10000)
 
 
 def test_dataframe(fake_names):
@@ -83,13 +83,11 @@ def test_dataframe(fake_names):
     dis.fit('streets', df['streets'], pipeline)
 
     with pytest.raises(ValueError):
-        # missing fitted field
-        dis.score_df(test_idx, df)
+        dis.score_df(test_idx, df)  # missing fitted field
 
     dis.fit('streets_2', df['streets_2'], pipeline)
     scores = dis.score_df(test_idx, df)
-    # the score for the chosen individual must be 1 since score(a,a)=1
-    assert scores.loc[test_idx] == pytest.approx(1)
+    assert scores.loc[test_idx] == pytest.approx(1)  # score(a, a) === 1
 
     scores = dis.score_df(test_idx, df, smoother='log', offset=90)
     assert scores.loc[test_idx] == pytest.approx(1)
@@ -97,5 +95,8 @@ def test_dataframe(fake_names):
     scores = dis.score_df(test_idx, df, smoother='offset', offset=-90)
     assert scores.loc[test_idx] == pytest.approx(1)
 
-    scores = dis.score_df(test_idx, df, weight={'streets': .8, 'streets_2': .2})
+    scores = dis.score_df(test_idx, df,
+                          weight={'streets': .8, 'streets_2': .2},
+                          smoother='log'
+                          )
     assert scores.loc[test_idx] == pytest.approx(1)

@@ -11,7 +11,7 @@ class Disamby(object):
         self.field_freq = dict()
         self.preprocessors = dict()
 
-    def fit(self, field: str, values: list, preprocessors: list=None):
+    def fit(self, field: str, values: list, preprocessors: list = None):
         """
 
         Parameters
@@ -41,7 +41,8 @@ class Disamby(object):
 
         self.field_freq[field] = counter
 
-    def score_df(self, index, data_frame: DataFrame, weight=None, smoother=None, offset=0):
+    def score_df(self, index, data_frame: DataFrame, weight=None,
+                 smoother=None, offset=0):
         """
         For the given term compute the score given the dataframe
         The column names of the dataframe are assumed to be the fields you
@@ -74,15 +75,15 @@ class Disamby(object):
                              "their frequency.")
 
         if weight is None:
-            weight = {f: 1/len(fields) for f in fields}
+            weight = {f: 1 / len(fields) for f in fields}
 
         def scoring_fun(record):
             total_score = 0
             for field in fields:
                 score = self.score(own_record[field],
-                                    record[field], field,
-                                    smoother=smoother,
-                                    offset=offset)
+                                   record[field], field,
+                                   smoother=smoother,
+                                   offset=offset)
                 score *= weight[field]
                 total_score += score
             return total_score
@@ -90,7 +91,7 @@ class Disamby(object):
         return data_frame.apply(scoring_fun, axis=1)
 
     def score(self, term: str, other_term: str, field: str,
-              smoother=None, offset=0,) -> float:
+              smoother=None, offset=0, ) -> float:
         """
         Computes the score between the two strings using the frequency data
 
@@ -127,7 +128,7 @@ class Disamby(object):
         return score
 
     def id_potential(self, words: tuple, field: str,
-                     smoother: str=None, offset=0) -> tuple:
+                     smoother: str = None, offset=0) -> tuple:
         """
         Computes the weights of the words based on the observed frequency
         and normalized.
@@ -166,7 +167,7 @@ class Disamby(object):
         ]
 
         total_weight = sum(id_potentials)
-        return tuple(idp/total_weight for idp in id_potentials)
+        return tuple(idp / total_weight for idp in id_potentials)
 
     @staticmethod
     def pre_process(base_name, functions: list):
@@ -182,7 +183,7 @@ class Disamby(object):
 
     @staticmethod
     def _smooth_none(occurrences, *args):
-        return 1/max(occurrences, 1)
+        return 1 / max(occurrences, 1)
 
     @staticmethod
     def _smooth_offset(occurrences, offset, *args):
@@ -192,4 +193,4 @@ class Disamby(object):
     def _smooth_log(occ, offset, max_occ):
         max_offset = max(max_occ + offset, 1)
         word_offset = max(occ + offset, 1)
-        return log(max_offset/word_offset)
+        return log(max_offset / word_offset)

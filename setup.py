@@ -13,23 +13,24 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'Click>=6.0',
-    'pandas'
 ]
 
 setup_requirements = [
-    'pytest-runner',
-    'faker'
+    'pytest-runner'
 ]
 
 test_requirements = [
     'pytest',
-    # TODO: put package test requirements here
+    'pandas',
+    'faker',
+    'jellyfish'
 ]
 
 setup(
     name='disamby',
     version='0.1.0',
-    description="Python package to carry out entity disambiguation based on string matching",
+    description="Python package to carry out entity disambiguation based on "
+                "string matching",
     long_description=readme + '\n\n' + history,
     author="Luca Verginer",
     author_email='luca@verginer.eu',
@@ -50,13 +51,10 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
     tests_require=test_requirements,

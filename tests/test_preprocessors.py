@@ -55,6 +55,7 @@ def test_split_words():
 def test_remove_punctuation():
     assert remove_punctuation('.has a .few!') == 'has a few'
 
+
 @mark.parametrize('raw,expected', [
     ('this Ias I.B.M',
      ('THIS', 'HIS ', 'IS I', 'S IA', ' IAS', 'IAS ', 'AS I', 'S IB', ' IBM')

@@ -3,13 +3,13 @@ python:
 - 3.6
 - 3.5
 install:
-    pip install -U tox-travis
-    pip install codacy-coverage
+    - pip install -U tox-travis
+    - codacy-coverage
 script:
-    tox
-    coverage run --source disamby -m pytest
-    coverage xml
-    python-codacy-coverage -r coverage.xml
+    - tox
+    - coverage run --source disamby -m pytest
+    - coverage xml
+    - python-codacy-coverage -r coverage.xml
 deploy:
   provider: pypi
   user: verginer

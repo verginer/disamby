@@ -32,7 +32,7 @@ class Disamby(object):
     ... })
     >>> prep = [normalize_whitespace, split_words]
     >>> dis = Disamby(df, prep)
-    >>> dis.score_df(0, df, smoother='log').values
+    >>> dis.pandas_score(0, df, smoother='log').values
     array([ 1.,  0.25,  0.])
     """
 
@@ -75,7 +75,7 @@ class Disamby(object):
         >>> dis = Disamby()
         >>> prep = [split_words]
         >>> dis.fit(df, prep)
-        >>> df_scores = dis.score_df(0, df)
+        >>> df_scores = dis.pandas_score(0, df)
         >>> df_scores.values
         array([ 1.,  0.,  0.])
         """
@@ -86,8 +86,8 @@ class Disamby(object):
         except AttributeError:
             self._fit_field(data, preprocessors=preprocessors, field=field)
 
-    def score_df(self, index, data_frame,
-                 smoother=None, offset=0, weight=None):
+    def pandas_score(self, index, data_frame,
+                     smoother=None, offset=0, weight=None):
         """
         For the given term compute the score given the dataframe
         The column names of the dataframe are assumed to be the fields you
@@ -134,7 +134,7 @@ class Disamby(object):
                 total_score += score
             return total_score
 
-        return data_frame.apply(scoring_fun, axis=1)
+        return scoring_fun
 
     def _fit_field(self, data: PandasObj, preprocessors: list=None, field: str=None):
         if field not in self.preprocessors:

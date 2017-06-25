@@ -68,10 +68,8 @@ def test_scoring(smoother, offset, expected, disamby_fitted_instance):
                       smoother=smoother, offset=offset)
     assert score == pytest.approx(expected, abs=.01)
 
-# test_scoring(smoother=None, offset=0, expected=.5454545454545454, disamby_fitted_instance=disamby_fitted_instance(fake_names()))
 
-
-def test_dataframe(fake_pandas_df):
+def test_dataframe_raise_exception(fake_pandas_df):
     df = fake_pandas_df
     test_idx = 20
 
@@ -85,27 +83,32 @@ def test_dataframe(fake_pandas_df):
     with pytest.raises(KeyError):
         dis.fit(df['streets'].values, pipeline)  # no field specified
 
-    dis.fit(df['streets'], pipeline)
-
     with pytest.raises(ValueError):
-        dis.score_df(test_idx, df)  # missing fitted field
+        dis.pandas_score(test_idx, df)  # missing fitted field
 
-    dis.fit(df['streets_2'], pipeline)
-    scores = dis.score_df(test_idx, df)
 
+@pytest.mark.parametrize('smoother,offset,weight,expected',[
+    (None, 0, None, 0.011928429423459246),
+    ('log', 90, None, 0.02741944357386672),
+    ('offset', -90, None, 0.03125),
+    ('log', 90, {'streets': .8, 'streets_2': .2}, 0.010967777429546688)
+])
+def test_dataframe(smoother, offset, weight, expected, fake_pandas_df):
+    df = fake_pandas_df
+    test_idx = 20
+
+    pipeline = [prep.normalize_whitespace,
+                prep.remove_punctuation,
+                prep.compact_abbreviations,
+                lambda x: prep.ngram(x, 4)]
+
+    dis = Disamby(df, pipeline)
+
+    scoring_fun = dis.pandas_score(test_idx, df, smoother, offset, weight)
+    scores = df.apply(scoring_fun, axis=1)
     assert scores.loc[test_idx] == pytest.approx(1)  # score(a, a) === 1
-
-    scores = dis.score_df(test_idx, df, smoother='log', offset=90)
-    assert scores.loc[test_idx] == pytest.approx(1)
-
-    scores = dis.score_df(test_idx, df, smoother='offset', offset=-90)
-    assert scores.loc[test_idx] == pytest.approx(1)
-
-    scores = dis.score_df(test_idx, df,
-                          weight={'streets': .8, 'streets_2': .2},
-                          smoother='log'
-                          )
-    assert scores.loc[test_idx] == pytest.approx(1)
+    assert ((scores.values >= 0) & (scores.values <= 1.001)).all()
+    assert scores.loc[2] == pytest.approx(expected)
 
 
 def test_dataframe_as_argument(fake_pandas_df):
@@ -121,20 +124,9 @@ def test_dataframe_as_argument(fake_pandas_df):
 
     dis.fit(df, pipeline)
 
-    scores = dis.score_df(test_idx, df)
+    score_f = dis.pandas_score(test_idx, df)
+    scores = df.apply(score_f, axis=1)
     assert scores.loc[test_idx] == pytest.approx(1)  # score(a, a) === 1
-
-    scores = dis.score_df(test_idx, df, smoother='log', offset=90)
-    assert scores.max() == pytest.approx(1)
-
-    scores = dis.score_df(test_idx, df, smoother='offset', offset=-90)
-    assert scores.max() == pytest.approx(1)
-
-    scores = dis.score_df(test_idx, df,
-                          weight={'streets': .8, 'streets_2': .2},
-                          smoother='log'
-                          )
-    assert scores.max() == pytest.approx(1)
 
 
 def test_instant_instantiation(fake_pandas_df):
@@ -147,9 +139,7 @@ def test_instant_instantiation(fake_pandas_df):
                 lambda x: prep.ngram(x, 4)]
 
     dis = Disamby(df, pipeline)
-
-    scores = dis.score_df(test_idx, df, 'log')
-    assert scores.max() == pytest.approx(1)
+    dis.field_freq['streets'].most_common()
 
 
 def test_log_scoring_pathological():
@@ -160,5 +150,6 @@ def test_log_scoring_pathological():
     )
     prep = [normalize_whitespace, split_words]
     dis = Disamby(df, prep)
-    score = dis.score_df(0, df, smoother='log', weight={'a': .2, 'b': .8})
+    score_f = dis.pandas_score(0, df, smoother='log', weight={'a': .2, 'b': .8})
+    score = df.apply(score_f, axis=1)
     assert score[1] < 1

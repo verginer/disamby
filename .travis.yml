@@ -4,6 +4,7 @@ python:
 - 3.5
 install:
     - pip install -U tox-travis
+    - pip install coverage
     - pip install codacy-coverage
 script:
     - tox

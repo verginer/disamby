@@ -38,3 +38,8 @@ This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypack
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
 
+
+
+.. image:: https://api.codacy.com/project/badge/Grade/811e19e201ef48a2bdca563f41381a2f
+   :alt: Codacy Badge
+   :target: https://www.codacy.com/app/verginer/disamby?utm_source=github.com&utm_medium=referral&utm_content=verginer/disamby&utm_campaign=badger

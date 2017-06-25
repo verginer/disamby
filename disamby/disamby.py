@@ -39,6 +39,8 @@ class Disamby(object):
     def __init__(self, data: PandasObj=None, preprocessors: list=None, field: str=None):
         self.field_freq = dict()
         self.preprocessors = dict()
+        self.__processed_token_cache = dict()
+        self.__most_common = dict()
         if data is not None:
             if preprocessors is None:
                 raise ValueError("Preprocessor not provided")
@@ -111,6 +113,7 @@ class Disamby(object):
         """
 
         fields = data_frame.columns
+        # TODO: make it work with series objects
         own_record = data_frame.loc[index]
 
         if set(fields) != set(self.field_freq.keys()):
@@ -148,13 +151,14 @@ class Disamby(object):
                                "`field` argument.")
 
         self.preprocessors[field] = preprocessors
-
+        self.__processed_token_cache[field] = dict()
         counter = Counter()
 
         for name in data:
             norm_values = self.pre_process(name, preprocessors)
+            self.__processed_token_cache[field][name] = norm_values
             counter.update(norm_values)
-
+        self.__most_common[field] = counter.most_common(1)[0][1]
         self.field_freq[field] = counter
 
     def score(self, term: str, other_term: str, field: str,
@@ -183,9 +187,8 @@ class Disamby(object):
         -----
         The score is not commutative (i.e. c(A,B)!=C(B,A))
         """
-        funcs = self.preprocessors[field]
-        own_parts = self.pre_process(term, funcs)
-        other_parts = self.pre_process(other_term, funcs)
+        own_parts = self.__processed_token_cache[field][term]
+        other_parts = self.__processed_token_cache[field][other_term]
 
         weights = self.id_potential(own_parts, field, smoother, offset)
         score = 0
@@ -228,7 +231,7 @@ class Disamby(object):
         counter = self.field_freq[field]
 
         s_fun = smoothers[smoother]
-        max_occ = counter.most_common(1)[0][1]
+        max_occ = self.__most_common[field]
         id_potentials = [
             s_fun(counter[word], offset, max_occ) for word in words
         ]

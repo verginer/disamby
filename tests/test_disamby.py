@@ -156,7 +156,6 @@ def test_instant_instantiation(fake_pandas_df):
 
 
 def test_log_scoring_pathological():
-
     from disamby.preprocessors import split_words, normalize_whitespace
     df = pd.DataFrame(
         {'a': ['Luca Georger', 'Luke Geroge', 'Adrian Sulzer'],

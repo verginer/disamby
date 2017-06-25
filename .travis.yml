@@ -4,7 +4,7 @@ python:
 - 3.5
 install:
     - pip install -U tox-travis
-    - codacy-coverage
+    - pip install codacy-coverage
 script:
     - tox
     - coverage run --source disamby -m pytest

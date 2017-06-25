@@ -28,7 +28,7 @@ test_requirements = [
 
 setup(
     name='disamby',
-    version='0.1.0',
+    version='0.2.0',
     description="Python package to carry out entity disambiguation based on "
                 "string matching",
     long_description=readme + '\n\n' + history,

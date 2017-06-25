@@ -4,7 +4,7 @@
 """Tests for `disamby` package."""
 import pytest
 from faker import Faker
-
+import pandas as pd
 from disamby import Disamby
 import disamby.preprocessors as prep
 from jellyfish import metaphone
@@ -36,7 +36,6 @@ def disamby_fitted_instance(fake_names):
 
 @pytest.fixture
 def fake_pandas_df(fake_names):
-    import pandas as pd
     df = pd.DataFrame({
         'streets': fake_names(90, 40),
         'streets_2': fake_names(10, 40)
@@ -58,22 +57,21 @@ def test_identification_potential(disamby_fitted_instance):
     assert sum(weights) == pytest.approx(1)
 
 
-def test_scoring(disamby_fitted_instance: Disamby):
+@pytest.mark.parametrize('smoother,offset,expected,exc', [
+    (None, 0, .5454545454545454, None),
+    ('offset', 1000, .66, None),
+    ('log', 10000, .5, None),
+    ('mambo', 1, 2, KeyError)
+])
+def test_scoring(smoother, offset, expected, exc, disamby_fitted_instance):
     dis = disamby_fitted_instance
-    score = dis.score('street george suit', 'suit street', 'streets')
-    assert score == pytest.approx(.5454545454545454)
+    try:
+        score = dis.score('street george suit', 'suit street', 'streets',
+                          smoother=smoother, offset=offset)
+    except exc:
+        return
 
-    score = dis.score('street george suit', 'suit street', 'streets',
-                      smoother='offset', offset=1000)
-    assert score > 0.66
-
-    score = dis.score('street george suit', 'suit street', 'streets',
-                      smoother='log', offset=10000)
-    assert score <= .55
-
-    with pytest.raises(KeyError):
-        dis.score('street george suit', 'suit street', 'streets',
-                  smoother='mambo', offset=10000)
+    assert score == pytest.approx(expected, abs=.01)
 
 
 def test_dataframe(fake_pandas_df):
@@ -97,6 +95,7 @@ def test_dataframe(fake_pandas_df):
 
     dis.fit(df['streets_2'], pipeline)
     scores = dis.score_df(test_idx, df)
+
     assert scores.loc[test_idx] == pytest.approx(1)  # score(a, a) === 1
 
     scores = dis.score_df(test_idx, df, smoother='log', offset=90)
@@ -157,7 +156,7 @@ def test_instant_instantiation(fake_pandas_df):
 
 
 def test_log_scoring_pathological():
-    import pandas as pd
+
     from disamby.preprocessors import split_words, normalize_whitespace
     df = pd.DataFrame(
         {'a': ['Luca Georger', 'Luke Geroge', 'Adrian Sulzer'],

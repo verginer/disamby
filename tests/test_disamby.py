@@ -57,21 +57,18 @@ def test_identification_potential(disamby_fitted_instance):
     assert sum(weights) == pytest.approx(1)
 
 
-@pytest.mark.parametrize('smoother,offset,expected,exc', [
-    (None, 0, .5454545454545454, None),
-    ('offset', 1000, .66, None),
-    ('log', 10000, .5, None),
-    ('mambo', 1, 2, KeyError)
+@pytest.mark.parametrize('smoother,offset,expected', [
+    (None, 0, 1),
+    ('offset', 1000, 1),
+    ('log', 10000, 1),
 ])
-def test_scoring(smoother, offset, expected, exc, disamby_fitted_instance):
+def test_scoring(smoother, offset, expected, disamby_fitted_instance):
     dis = disamby_fitted_instance
-    try:
-        score = dis.score('street george suit', 'suit street', 'streets',
-                          smoother=smoother, offset=offset)
-    except exc:
-        return
-
+    score = dis.score('David Heights', 'Rebecca Shoal Suite', 'streets',
+                      smoother=smoother, offset=offset)
     assert score == pytest.approx(expected, abs=.01)
+
+# test_scoring(smoother=None, offset=0, expected=.5454545454545454, disamby_fitted_instance=disamby_fitted_instance(fake_names()))
 
 
 def test_dataframe(fake_pandas_df):

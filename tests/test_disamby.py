@@ -30,8 +30,18 @@ def disamby_fitted_instance(fake_names):
                 prep.normalize_whitespace,
                 prep.split_words]
     dis = Disamby()
-    dis._fit_field(names, pipeline, 'streets')
+    dis.fit(names, pipeline, 'streets')
     return dis
+
+
+@pytest.fixture
+def fake_pandas_df(fake_names):
+    import pandas as pd
+    df = pd.DataFrame({
+        'streets': fake_names(90, 40),
+        'streets_2': fake_names(10, 40)
+    })
+    return df
 
 
 def test_frequency_counter(disamby_fitted_instance):
@@ -66,16 +76,12 @@ def test_scoring(disamby_fitted_instance: Disamby):
                   smoother='mambo', offset=10000)
 
 
-def test_dataframe(fake_names):
-    import pandas as pd
-
+def test_dataframe(fake_pandas_df):
+    df = fake_pandas_df
     test_idx = 20
 
-    df = pd.DataFrame({
-        'streets': fake_names(90, 40),
-        'streets_2': fake_names(10, 40)
-    })
     dis = Disamby()
+
     pipeline = [prep.normalize_whitespace,
                 prep.remove_punctuation,
                 prep.compact_abbreviations,
@@ -106,16 +112,12 @@ def test_dataframe(fake_names):
     assert scores.loc[test_idx] == pytest.approx(1)
 
 
-def test_dataframe_onego(fake_names):
-    import pandas as pd
-
+def test_dataframe_as_argument(fake_pandas_df):
+    df = fake_pandas_df
     test_idx = 20
 
-    df = pd.DataFrame({
-        'streets': fake_names(90, 40),
-        'streets_2': fake_names(10, 40)
-    })
     dis = Disamby()
+
     pipeline = [prep.normalize_whitespace,
                 prep.remove_punctuation,
                 prep.compact_abbreviations,
@@ -127,13 +129,41 @@ def test_dataframe_onego(fake_names):
     assert scores.loc[test_idx] == pytest.approx(1)  # score(a, a) === 1
 
     scores = dis.score_df(test_idx, df, smoother='log', offset=90)
-    assert scores.loc[test_idx] == pytest.approx(1)
+    assert scores.max() == pytest.approx(1)
 
     scores = dis.score_df(test_idx, df, smoother='offset', offset=-90)
-    assert scores.loc[test_idx] == pytest.approx(1)
+    assert scores.max() == pytest.approx(1)
 
     scores = dis.score_df(test_idx, df,
                           weight={'streets': .8, 'streets_2': .2},
                           smoother='log'
                           )
-    assert scores.loc[test_idx] == pytest.approx(1)
+    assert scores.max() == pytest.approx(1)
+
+
+def test_instant_instantiation(fake_pandas_df):
+    df = fake_pandas_df
+    test_idx = 20
+
+    pipeline = [prep.normalize_whitespace,
+                prep.remove_punctuation,
+                prep.compact_abbreviations,
+                lambda x: prep.ngram(x, 4)]
+
+    dis = Disamby(df, pipeline)
+
+    scores = dis.score_df(test_idx, df, 'log')
+    assert scores.max() == pytest.approx(1)
+
+
+def test_log_scoring_pathological():
+    import pandas as pd
+    from disamby.preprocessors import split_words, normalize_whitespace
+    df = pd.DataFrame(
+        {'a': ['Luca Georger', 'Luke Geroge', 'Adrian Sulzer'],
+         'b': ['Mira, 34, Augsburg', 'Miri, 34, Augsburg', 'Milano, 34']}
+    )
+    prep = [normalize_whitespace, split_words]
+    dis = Disamby(df, prep)
+    score = dis.score_df(0, df, smoother='log', weight={'a': .2, 'b': .8})
+    assert score[1] < 1

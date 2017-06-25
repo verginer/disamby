@@ -2,28 +2,55 @@
 
 """Main module."""
 from collections import Counter
+from typing import TypeVar
+from pandas import DataFrame, Series
 from math import log
 
 
+PandasObj = TypeVar('pandas', DataFrame, Series, list)
+
+
 class Disamby(object):
-    def __init__(self):
+    """
+    Class for disambiguation fitting, scoring and ranking of potential matches
+
+    A `Disamby` instance stores the pre-processing pipeline applied to the
+    strings for a given field as well as the the computed frequencies from the
+    entire corpus of strings to match against.
+    `Disamby` can be instantiated either with not arguments, with a list of
+    strings, pandas.Series or pandas.DataFrame. This triggers the immediate
+    call to the `fit` method, whose doc explains the parameters.
+
+    Examples
+    --------
+
+    >>> import pandas as pd
+    >>> from disamby.preprocessors import split_words, normalize_whitespace
+    >>> df = pd.DataFrame(
+    ... {'a': ['Luca Georger', 'Luke Geroge', 'Adrian Sulzer'],
+    ... 'b': ['Mira, 34, Augsburg', 'Miri, 34, Augsburg', 'Milano, 34']
+    ... })
+    >>> prep = [normalize_whitespace, split_words]
+    >>> dis = Disamby(df, prep)
+    >>> dis.score_df(0, df, smoother='log').values
+    array([ 1.,  0.25,  0.])
+    """
+
+    def __init__(self, data: PandasObj=None, preprocessors: list=None, field: str=None):
         self.field_freq = dict()
         self.preprocessors = dict()
+        if data is not None:
+            if preprocessors is None:
+                raise ValueError("Preprocessor not provided")
+            self.fit(data, preprocessors, field)
 
-    def fit(self, values: list, preprocessors: list = None, field: str = None):
-        try:
-            columns = values.columns
-            for col in columns:
-                self._fit_field(values[col], preprocessors=preprocessors)
-        except AttributeError:
-            self._fit_field(values, preprocessors=preprocessors, field=field)
-
-    def _fit_field(self, values: list, preprocessors: list = None, field: str=None):
+    def fit(self, data: PandasObj, preprocessors: list, field: str=None):
         """
+        Computes the frequencies of the terms by field.
 
         Parameters
         ----------
-        values : list or pandas.Series
+        data : pandas.DataFrame, pandas.Series or list of strings
             list of strings or pandas.DataFrame
             if dataframe is given then the field defaults to the column name
         preprocessors : list
@@ -33,32 +60,32 @@ class Disamby(object):
             strings.
         field : str
             string identifying which field this data belongs to
+
+        Examples
+        --------
+
+        >>> import pandas as pd
+        >>> from disamby.preprocessors import split_words
+        >>> df = pd.DataFrame(
+        ... {'a': ['Luca Georger', 'Luke Geroge', 'Adrian Sulzer'],
+        ... 'b': ['Mira, 34, Augsburg', 'Miri, 32', 'Milano, 34']
+        ... })
+        >>> dis = Disamby()
+        >>> prep = [split_words]
+        >>> dis.fit(df, prep)
+        >>> df_scores = dis.score_df(0, df)
+        >>> df_scores.values
+        array([ 1.,  0.,  0.])
         """
-        if field not in self.preprocessors:
-            ValueError('preprocessors have already been defined, '
-                       'cannot redefine. This would render the lookup '
-                       'inconsistent')
+        try:
+            columns = data.columns
+            for col in columns:
+                self._fit_field(data[col], preprocessors=preprocessors)
+        except AttributeError:
+            self._fit_field(data, preprocessors=preprocessors, field=field)
 
-        if field is None:
-            try:
-                field = values.name
-            except AttributeError:  # was not a pandas.Series
-                raise KeyError("The provided values are not a pandas Series, "
-                               "if the data is a list you need to provide the"
-                               "`field` argument.")
-
-        self.preprocessors[field] = preprocessors
-
-        counter = Counter()
-
-        for name in values:
-            norm_values = self.pre_process(name, preprocessors)
-            counter.update(norm_values)
-
-        self.field_freq[field] = counter
-
-    def score_df(self, index, data_frame, weight=None,
-                 smoother=None, offset=0):
+    def score_df(self, index, data_frame,
+                 smoother=None, offset=0, weight=None):
         """
         For the given term compute the score given the dataframe
         The column names of the dataframe are assumed to be the fields you
@@ -105,6 +132,30 @@ class Disamby(object):
             return total_score
 
         return data_frame.apply(scoring_fun, axis=1)
+
+    def _fit_field(self, data: PandasObj, preprocessors: list=None, field: str=None):
+        if field not in self.preprocessors:
+            ValueError('preprocessors have already been defined, '
+                       'cannot redefine. This would render the lookup '
+                       'inconsistent')
+
+        if field is None:
+            try:
+                field = data.name
+            except AttributeError:  # was not a pandas.Series
+                raise KeyError("The provided data are not a pandas Series, "
+                               "if the data is a list you need to provide the"
+                               "`field` argument.")
+
+        self.preprocessors[field] = preprocessors
+
+        counter = Counter()
+
+        for name in data:
+            norm_values = self.pre_process(name, preprocessors)
+            counter.update(norm_values)
+
+        self.field_freq[field] = counter
 
     def score(self, term: str, other_term: str, field: str,
               smoother=None, offset=0) -> float:
@@ -207,6 +258,6 @@ class Disamby(object):
 
     @staticmethod
     def _smooth_log(occ, offset, max_occ):
-        max_offset = max(max_occ + offset, 1)
+        max_offset = max(max_occ + offset + 1, 1)
         word_offset = max(occ + offset, 1)
         return log(max_offset / word_offset)

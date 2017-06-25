@@ -30,7 +30,7 @@ def disamby_fitted_instance(fake_names):
                 prep.normalize_whitespace,
                 prep.split_words]
     dis = Disamby()
-    dis.fit('streets', names, pipeline)
+    dis._fit_field(names, pipeline, 'streets')
     return dis
 
 
@@ -80,12 +80,49 @@ def test_dataframe(fake_names):
                 prep.remove_punctuation,
                 prep.compact_abbreviations,
                 lambda x: prep.ngram(x, 4)]
-    dis.fit('streets', df['streets'], pipeline)
+
+    with pytest.raises(KeyError):
+        dis.fit(df['streets'].values, pipeline)  # no field specified
+
+    dis.fit(df['streets'], pipeline)
 
     with pytest.raises(ValueError):
         dis.score_df(test_idx, df)  # missing fitted field
 
-    dis.fit('streets_2', df['streets_2'], pipeline)
+    dis.fit(df['streets_2'], pipeline)
+    scores = dis.score_df(test_idx, df)
+    assert scores.loc[test_idx] == pytest.approx(1)  # score(a, a) === 1
+
+    scores = dis.score_df(test_idx, df, smoother='log', offset=90)
+    assert scores.loc[test_idx] == pytest.approx(1)
+
+    scores = dis.score_df(test_idx, df, smoother='offset', offset=-90)
+    assert scores.loc[test_idx] == pytest.approx(1)
+
+    scores = dis.score_df(test_idx, df,
+                          weight={'streets': .8, 'streets_2': .2},
+                          smoother='log'
+                          )
+    assert scores.loc[test_idx] == pytest.approx(1)
+
+
+def test_dataframe_onego(fake_names):
+    import pandas as pd
+
+    test_idx = 20
+
+    df = pd.DataFrame({
+        'streets': fake_names(90, 40),
+        'streets_2': fake_names(10, 40)
+    })
+    dis = Disamby()
+    pipeline = [prep.normalize_whitespace,
+                prep.remove_punctuation,
+                prep.compact_abbreviations,
+                lambda x: prep.ngram(x, 4)]
+
+    dis.fit(df, pipeline)
+
     scores = dis.score_df(test_idx, df)
     assert scores.loc[test_idx] == pytest.approx(1)  # score(a, a) === 1
 

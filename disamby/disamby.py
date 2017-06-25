@@ -10,25 +10,42 @@ class Disamby(object):
         self.field_freq = dict()
         self.preprocessors = dict()
 
-    def fit(self, field: str, values: list, preprocessors: list = None):
+    def fit(self, values: list, preprocessors: list = None, field: str = None):
+        try:
+            columns = values.columns
+            for col in columns:
+                self._fit_field(values[col], preprocessors=preprocessors)
+        except AttributeError:
+            self._fit_field(values, preprocessors=preprocessors, field=field)
+
+    def _fit_field(self, values: list, preprocessors: list = None, field: str=None):
         """
 
         Parameters
         ----------
-        field : str
-            string identifying which field this data belongs to
-        values : list
-            list of strings
+        values : list or pandas.Series
+            list of strings or pandas.DataFrame
+            if dataframe is given then the field defaults to the column name
         preprocessors : list
             list of functions to apply in that order
             note the first function must accept a string, the other functions
             must be such that a pipeline is possible the result is a tuple of
             strings.
+        field : str
+            string identifying which field this data belongs to
         """
         if field not in self.preprocessors:
             ValueError('preprocessors have already been defined, '
                        'cannot redefine. This would render the lookup '
                        'inconsistent')
+
+        if field is None:
+            try:
+                field = values.name
+            except AttributeError:  # was not a pandas.Series
+                raise KeyError("The provided values are not a pandas Series, "
+                               "if the data is a list you need to provide the"
+                               "`field` argument.")
 
         self.preprocessors[field] = preprocessors
 
@@ -90,7 +107,7 @@ class Disamby(object):
         return data_frame.apply(scoring_fun, axis=1)
 
     def score(self, term: str, other_term: str, field: str,
-              smoother=None, offset=0, ) -> float:
+              smoother=None, offset=0) -> float:
         """
         Computes the score between the two strings using the frequency data
 

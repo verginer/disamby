@@ -22,6 +22,16 @@ def f_names(seed, n):
 
 
 @pytest.mark.parametrize('size', [20, 1000, 2000])
+def test_fitting(size, pipeline, benchmark):
+    df = pd.DataFrame({
+        'streets': f_names(90, size),
+        'streets_2': f_names(10, size)
+    })
+
+    benchmark(Disamby, df, pipeline)
+
+
+@pytest.mark.parametrize('size', [20, 1000, 2000])
 def test_instant_instantiation(size, pipeline, benchmark):
     df = pd.DataFrame({
         'streets': f_names(90, size),

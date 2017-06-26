@@ -10,6 +10,7 @@ from disamby.preprocessors import split_words
 from disamby.preprocessors import normalize_whitespace
 from disamby.preprocessors import remove_punctuation
 from disamby.preprocessors import ngram
+from disamby.preprocessors import nword
 
 
 @mark.parametrize('raw,expected', [
@@ -66,3 +67,12 @@ def test_combined_preprocessors(raw, expected):
     abbreviated = compact_abbreviations(reduced)
     trigram = ngram(abbreviated, 4)
     assert trigram == expected
+
+
+@pytest.mark.parametrize('raw,k,expected',[
+    ('this that the other', 2, ('thisthat', 'thatthe', 'theother')),
+    ('this that the other', 4, ('thisthattheother',)),
+    ('this that the other', 20, ('thisthattheother',))
+])
+def test_word_sequencer(raw, k, expected):
+    assert nword(raw, k) == expected

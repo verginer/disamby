@@ -41,6 +41,8 @@ class Disamby(object):
         self.preprocessors = dict()
         self._processed_token_cache = dict()
         self._most_common = dict()
+        self._token_to_instance = dict()
+        # TODO: add lookup table per token (token->instance)
         if data is not None:
             if preprocessors is None:
                 raise ValueError("Preprocessor not provided")
@@ -152,12 +154,18 @@ class Disamby(object):
 
         self.preprocessors[field] = preprocessors
         self._processed_token_cache[field] = dict()
+        self._token_to_instance[field] = dict()
         counter = Counter()
 
-        for name in data:
-            norm_values = self.pre_process(name, preprocessors)
-            self._processed_token_cache[field][name] = norm_values
-            counter.update(norm_values)
+        for i, name in enumerate(data):
+            norm_tokens = self.pre_process(name, preprocessors)
+            self._processed_token_cache[field][name] = norm_tokens
+            counter.update(norm_tokens)
+            for token in norm_tokens:
+                if token in self._token_to_instance[field]:
+                    self._token_to_instance[field].append((i, name))
+                else:
+                    self._token_to_instance[field] = [(i, name)]
         self._most_common[field] = counter.most_common(1)[0][1]
         self.field_freq[field] = counter
 

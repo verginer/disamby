@@ -131,7 +131,6 @@ def test_dataframe_as_argument(fake_pandas_df):
 
 def test_instant_instantiation(fake_pandas_df):
     df = fake_pandas_df
-    test_idx = 20
 
     pipeline = [prep.normalize_whitespace,
                 prep.remove_punctuation,
@@ -153,3 +152,22 @@ def test_log_scoring_pathological():
     score_f = dis.pandas_score(0, df, smoother='log', weight={'a': .2, 'b': .8})
     score = df.apply(score_f, axis=1)
     assert score[1] < 1
+
+
+def test_find(fake_pandas_df):
+    df = fake_pandas_df
+
+    pipeline = [prep.normalize_whitespace,
+                prep.remove_punctuation,
+                prep.compact_abbreviations,
+                lambda x: prep.ngram(x, 4)]
+
+    dis = Disamby(df, pipeline)
+    term = list(dis._processed_token_cache['streets'].keys())[0]
+    results = dis.find(term, 'streets')
+    assert len(results) == 5
+    score_of_searched = [x.score for x in results if x.index == 0]
+    assert score_of_searched[0] == 1
+
+
+# test_find(fake_pandas_df(fake_names()))

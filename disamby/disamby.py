@@ -5,6 +5,10 @@ from collections import Counter
 from typing import TypeVar
 from pandas import DataFrame, Series
 from math import log
+from collections import namedtuple
+
+
+ScoredElement = namedtuple('ScoredElement', ['index', 'name', 'score'])
 
 
 PandasObj = TypeVar('pandas', DataFrame, Series, list)
@@ -88,6 +92,37 @@ class Disamby(object):
         except AttributeError:
             self._fit_field(data, preprocessors=preprocessors, field=field)
 
+    def find(self, word: str, field, threshold=0, **kwargs):
+        """
+        returns the list of scored instances which have a score above the
+        threshold. Note that strings which do not share any token are omitted
+        since their score is 0 by default.
+
+        Parameters
+        ----------
+        word
+        field
+        threshold
+
+        Returns
+        -------
+
+        """
+        own_tokens = self._processed_token_cache[field][word]
+
+        potential_candidates = set()
+        for token in own_tokens:
+            potential_candidates |= self._token_to_instance[field][token]
+
+        scored_candidates = []
+        for candidate in potential_candidates:
+            score = self.score(word, candidate[1], field, **kwargs)
+            if score >= threshold:
+                result = ScoredElement(candidate[0], candidate[1], score)
+                scored_candidates.append(result)
+
+        return scored_candidates
+
     def pandas_score(self, index, data_frame,
                      smoother=None, offset=0, weight=None):
         """
@@ -163,9 +198,9 @@ class Disamby(object):
             counter.update(norm_tokens)
             for token in norm_tokens:
                 if token in self._token_to_instance[field]:
-                    self._token_to_instance[field].append((i, name))
+                    self._token_to_instance[field][token] |= {(i, name)}
                 else:
-                    self._token_to_instance[field] = [(i, name)]
+                    self._token_to_instance[field][token] = {(i, name)}
         self._most_common[field] = counter.most_common(1)[0][1]
         self.field_freq[field] = counter
 
@@ -195,12 +230,15 @@ class Disamby(object):
         -----
         The score is not commutative (i.e. c(A,B)!=C(B,A))
         """
+
         try:
             own_parts = self._processed_token_cache[field][term]
             other_parts = self._processed_token_cache[field][other_term]
         except KeyError:
             own_parts = self.pre_process(term, self.preprocessors[field])
             other_parts = self.pre_process(term, self.preprocessors[field])
+
+        # get list of potential scores
 
         weights = self.id_potential(own_parts, field, smoother, offset)
         score = 0

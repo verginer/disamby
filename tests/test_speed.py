@@ -32,7 +32,7 @@ def test_fitting(size, pipeline, benchmark):
 
 
 @pytest.mark.parametrize('size', [20, 1000, 2000])
-def test_instant_instantiation(size, pipeline, benchmark):
+def test_exhaustive_df_search(size, pipeline, benchmark):
     df = pd.DataFrame({
         'streets': f_names(90, size),
         'streets_2': f_names(10, size)
@@ -42,6 +42,19 @@ def test_instant_instantiation(size, pipeline, benchmark):
     score_f = dis.pandas_score(0, df, 'log')
     scores = benchmark(df.apply, score_f, axis=1)
     assert scores.max() == pytest.approx(1)
+
+
+@pytest.mark.parametrize('size', [20, 1000, 2000, 8000  ])
+def test_sparse_find(size, pipeline, benchmark):
+    df = pd.DataFrame({
+        'streets': f_names(90, size),
+        'streets_2': f_names(10, size)
+    })
+    dis = Disamby(df, pipeline)
+    term = list(dis._processed_token_cache['streets'].keys())[0]
+    results = benchmark(dis.find, term, 'streets')
+    score_of_searched = [x.score for x in results if x.index == 0]
+    assert score_of_searched[0] == pytest.approx(1)
 
 
 def profile_function(size, pipeline):

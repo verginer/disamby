@@ -54,7 +54,7 @@ def test_identification_potential(disamby_fitted_instance):
     dis = disamby_fitted_instance
 
     weights = dis.id_potential(('st', 'street', 'suite'), 'streets')
-    assert sum(weights) == pytest.approx(1)
+    assert sum(weights.values()) == pytest.approx(1)
 
 
 @pytest.mark.parametrize('smoother,offset,expected', [
@@ -167,7 +167,7 @@ def test_find(fake_pandas_df):
     results = dis.find(term, 'streets')
     assert len(results) == 5
     score_of_searched = [x.score for x in results if x.index == 0]
-    assert score_of_searched[0] == 1
+    assert score_of_searched[0] == pytest.approx(1)
 
 
 # test_find(fake_pandas_df(fake_names()))

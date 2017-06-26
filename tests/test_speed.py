@@ -7,11 +7,11 @@ import pytest
 
 @pytest.fixture
 def pipeline():
-    pipeline = [prep.normalize_whitespace,
-                prep.remove_punctuation,
-                prep.compact_abbreviations,
-                lambda x: prep.ngram(x, 4)]
-    return pipeline
+    pipe = [prep.normalize_whitespace,
+            prep.remove_punctuation,
+            prep.compact_abbreviations,
+            lambda x: prep.ngram(x, 4)]
+    return pipe
 
 
 def f_names(seed, n):
@@ -31,20 +31,7 @@ def test_fitting(size, pipeline, benchmark):
     benchmark(Disamby, df, pipeline)
 
 
-@pytest.mark.parametrize('size', [20, 1000, 2000])
-def test_exhaustive_df_search(size, pipeline, benchmark):
-    df = pd.DataFrame({
-        'streets': f_names(90, size),
-        'streets_2': f_names(10, size)
-    })
-
-    dis = Disamby(df, pipeline)
-    score_f = dis.pandas_score(0, df, 'log')
-    scores = benchmark(df.apply, score_f, axis=1)
-    assert scores.max() == pytest.approx(1)
-
-
-@pytest.mark.parametrize('size', [20, 1000, 2000, 8000  ])
+@pytest.mark.parametrize('size', [20, 1000, 2000, 8000])
 def test_sparse_find(size, pipeline, benchmark):
     df = pd.DataFrame({
         'streets': f_names(90, size),

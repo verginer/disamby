@@ -7,11 +7,9 @@ from pandas import DataFrame, Series
 from math import log
 from collections import namedtuple
 
-
 ScoredElement = namedtuple('ScoredElement', ['index', 'name', 'score'])
 
-
-PandasObj = TypeVar('pandas', DataFrame, Series, list)
+PandasObj = {DataFrame, Series, list}
 
 
 class Disamby(object):
@@ -40,19 +38,19 @@ class Disamby(object):
     array([ 1.,  0.25,  0.])
     """
 
-    def __init__(self, data: PandasObj=None, preprocessors: list=None, field: str=None):
+    def __init__(self, data: PandasObj = None, preprocessors: list = None,
+                 field: str = None):
         self.field_freq = dict()
         self.preprocessors = dict()
         self._processed_token_cache = dict()
         self._most_common = dict()
         self._token_to_instance = dict()
-        # TODO: add lookup table per token (token->instance)
         if data is not None:
             if preprocessors is None:
                 raise ValueError("Preprocessor not provided")
             self.fit(data, preprocessors, field)
 
-    def fit(self, data: PandasObj, preprocessors: list, field: str=None):
+    def fit(self, data: PandasObj, preprocessors: list, field: str = None):
         """
         Computes the frequencies of the terms by field.
 
@@ -161,6 +159,7 @@ class Disamby(object):
             weight = {f: 1 / len(fields) for f in fields}
 
         def scoring_fun(record):
+            # TODO: make this use the faster find function
             total_score = 0
             for field in fields:
                 score = self.score(own_record[field],
@@ -173,7 +172,7 @@ class Disamby(object):
 
         return scoring_fun
 
-    def _fit_field(self, data: PandasObj, preprocessors: list=None, field: str=None):
+    def _fit_field(self, data: PandasObj, preprocessors: list = None, field: str = None):
         if field not in self.preprocessors:
             ValueError('preprocessors have already been defined, '
                        'cannot redefine. This would render the lookup '
@@ -239,16 +238,12 @@ class Disamby(object):
             other_parts = self.pre_process(term, self.preprocessors[field])
 
         # get list of potential scores
-
         weights = self.id_potential(own_parts, field, smoother, offset)
-        score = 0
-        for i, own in enumerate(own_parts):
-            if own in other_parts:
-                score += weights[i]
+        score = sum(w for part, w in weights.items() if part in other_parts)
         return score
 
     def id_potential(self, words: tuple, field: str,
-                     smoother: str = None, offset=0) -> tuple:
+                     smoother: str = None, offset=0) -> dict:
         """
         Computes the weights of the words based on the observed frequency
         and normalized.
@@ -282,12 +277,13 @@ class Disamby(object):
 
         s_fun = smoothers[smoother]
         max_occ = self._most_common[field]
-        id_potentials = [
-            s_fun(counter[word], offset, max_occ) for word in words
-        ]
+        id_potentials = {
+            word: s_fun(counter[word], offset, max_occ)
+            for word in words
+        }
 
-        total_weight = sum(id_potentials)
-        return tuple(idp / total_weight for idp in id_potentials)
+        total_weight = sum(id_potentials.values())
+        return {w: idp / total_weight for w, idp in id_potentials.items()}
 
     @staticmethod
     def pre_process(base_name, functions: list):
@@ -295,7 +291,7 @@ class Disamby(object):
         norm_name = base_name
         for f in functions:
             norm_name = f(norm_name)
-        return norm_name
+        return set(norm_name)
 
     @property
     def fields(self):

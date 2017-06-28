@@ -166,8 +166,8 @@ def test_find(fake_pandas_df):
     term = list(dis._processed_token_cache['streets'].keys())[0]
     results = dis.find(term, 'streets')
     assert len(results) == 5
-    score_of_searched = [x.score for x in results if x.index == 0]
-    assert score_of_searched[0] == pytest.approx(1)
+    score_of_searched = max(x.score for x in results)
+    assert score_of_searched == pytest.approx(1)
 
 
 # test_find(fake_pandas_df(fake_names()))

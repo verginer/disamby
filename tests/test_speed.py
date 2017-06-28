@@ -40,8 +40,8 @@ def test_sparse_find(size, pipeline, benchmark):
     dis = Disamby(df, pipeline)
     term = list(dis._processed_token_cache['streets'].keys())[0]
     results = benchmark(dis.find, term, 'streets')
-    score_of_searched = [x.score for x in results if x.index == 0]
-    assert score_of_searched[0] == pytest.approx(1)
+    score_of_searched = max(x.score for x in results)
+    assert score_of_searched == pytest.approx(1)
 
 
 def profile_function(size, pipeline):

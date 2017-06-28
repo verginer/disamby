@@ -9,7 +9,7 @@ from collections import namedtuple
 
 ScoredElement = namedtuple('ScoredElement', ['index', 'name', 'score'])
 
-PandasObj = {DataFrame, Series, list}
+PandasObj = TypeVar('pandas', DataFrame, Series, list)
 
 
 class Disamby(object):
@@ -239,7 +239,7 @@ class Disamby(object):
 
         # get list of potential scores
         weights = self.id_potential(own_parts, field, smoother, offset)
-        score = sum(w for part, w in weights.items() if part in other_parts)
+        score = sum(weights.get(tok, 0) for tok in other_parts)
         return score
 
     def id_potential(self, words: tuple, field: str,

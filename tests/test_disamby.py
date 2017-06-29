@@ -149,6 +149,6 @@ def test_alias_graph(company_df):
     from networkx import strongly_connected_components
     df = company_df(200)
     dis = Disamby(df['name'], preprocessors=pipeline)
-    graph = dis.alias_graph('name', verbose=False)
+    graph = dis.alias_graph('name', verbose=True)
     components = strongly_connected_components(graph)
     assert max(len(c) for c in components) == 2

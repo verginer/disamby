@@ -314,11 +314,13 @@ class Disamby(object):
         # remember this is the way to go to make it work with street addresses
 
         if not verbose:
-            tqdm = lambda x: x
+            t = lambda x: x
+        else:
+            t = tqdm
 
         edges = []
         nodes = []
-        for idx, name in tqdm(self.records[field]):
+        for idx, name in t(self.records[field]):
             targets = self.find(name, field=field, threshold=threshold, **kwargs)
             new_edges = [(idx, x.index, {'weight': x.score})
                          for x in targets if x.index != idx

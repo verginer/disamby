@@ -13,6 +13,8 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'Click>=6.0',
+    'networkx',
+    'tqdm'
 ]
 
 setup_requirements = [
@@ -23,7 +25,6 @@ test_requirements = [
     'pytest',
     'pandas',
     'faker',
-    'jellyfish'
 ]
 
 setup(

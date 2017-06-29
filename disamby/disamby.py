@@ -5,6 +5,8 @@ from collections import Counter
 from typing import TypeVar
 from pandas import DataFrame, Series
 from math import log
+from tqdm import tqdm
+from networkx import DiGraph
 from collections import namedtuple
 
 ScoredElement = namedtuple('ScoredElement', ['index', 'name', 'score'])
@@ -42,6 +44,7 @@ class Disamby(object):
                  field: str = None):
         self.field_freq = dict()
         self.preprocessors = dict()
+        self.records = dict()
         self._processed_token_cache = dict()
         self._most_common = dict()
         self._token_to_instance = dict()
@@ -90,7 +93,7 @@ class Disamby(object):
         except AttributeError:
             self._fit_field(data, preprocessors=preprocessors, field=field)
 
-    def find(self, word: str, field, threshold=0, **kwargs):
+    def find(self, word: str, field, threshold=0.0, **kwargs):
         """
         returns the list of scored instances which have a score above the
         threshold. Note that strings which do not share any token are omitted
@@ -172,7 +175,7 @@ class Disamby(object):
 
         return scoring_fun
 
-    def _fit_field(self, data: PandasObj, preprocessors: list = None, field: str = None):
+    def _fit_field(self, data: PandasObj, preprocessors: list=None, field: str=None):
         if field not in self.preprocessors:
             ValueError('preprocessors have already been defined, '
                        'cannot redefine. This would render the lookup '
@@ -189,12 +192,14 @@ class Disamby(object):
         self.preprocessors[field] = preprocessors
         self._processed_token_cache[field] = dict()
         self._token_to_instance[field] = dict()
+        self.records[field] = []
         counter = Counter()
 
         for i, name in enumerate(data):
             norm_tokens = self.pre_process(name, preprocessors)
             self._processed_token_cache[field][name] = norm_tokens
             counter.update(norm_tokens)
+            self.records[field].append((i, name))
             for token in norm_tokens:
                 if token in self._token_to_instance[field]:
                     self._token_to_instance[field][token] |= {(i, name)}
@@ -284,6 +289,48 @@ class Disamby(object):
 
         total_weight = sum(id_potentials.values())
         return {w: idp / total_weight for w, idp in id_potentials.items()}
+
+    def alias_graph(self, field, threshold=0.7, verbose=True, **kwargs) -> DiGraph:
+        """
+        This function creates the directed network connecting an instance to an other
+        through a directed edge if the the target instance has a similarity score above
+        the threshold.
+
+        Parameters
+        ----------
+        field : str
+        threshold : float
+            between 0 and 1
+        verbose : whether to show the progressbar
+        kwargs :
+            arguments to pass to the score function (i.e. offset, smoother)
+
+        Returns
+        -------
+        DiGraph
+
+        """
+        # TODO: make it independent from field and make it work with all fields at once
+        # remember this is the way to go to make it work with street addresses
+
+        if not verbose:
+            tqdm = lambda x: x
+
+        edges = []
+        nodes = []
+        for idx, name in tqdm(self.records[field]):
+            targets = self.find(name, field=field, threshold=threshold, **kwargs)
+            new_edges = [(idx, x.index, {'weight': x.score})
+                         for x in targets if x.index != idx
+                         ]
+            new_nodes = [(x.index, {field: x.name}) for x in targets]
+            edges.extend(new_edges)
+            nodes.extend(new_nodes)
+
+        alias_graph = DiGraph()
+        alias_graph.add_nodes_from(nodes)
+        alias_graph.add_edges_from(edges)
+        return alias_graph
 
     @staticmethod
     def pre_process(base_name, functions: list):

@@ -26,8 +26,9 @@ def disamby_fitted_instance(fake_names):
                 prep.remove_punctuation,
                 prep.compact_abbreviations,
                 prep.split_words]
+    data_series = pd.Series(names)
     dis = Disamby()
-    dis.fit(names, pipeline, 'streets')
+    dis.fit(data_series, pipeline, 'streets')
     return dis
 
 

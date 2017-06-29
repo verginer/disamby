@@ -2,7 +2,7 @@
 
 """Main module."""
 from collections import Counter
-from typing import TypeVar
+from typing import TypeVar, Union
 from pandas import DataFrame, Series
 from math import log
 from tqdm import tqdm
@@ -10,8 +10,7 @@ from networkx import DiGraph
 from collections import namedtuple
 
 ScoredElement = namedtuple('ScoredElement', ['index', 'name', 'score'])
-
-PandasObj = TypeVar('pandas', DataFrame, Series, list)
+PandasObj = Union[DataFrame, Series]
 
 
 class Disamby(object):
@@ -40,8 +39,7 @@ class Disamby(object):
     array([ 1.,  0.25,  0.])
     """
 
-    def __init__(self, data: PandasObj = None, preprocessors: list = None,
-                 field: str = None):
+    def __init__(self, data: PandasObj=None, preprocessors: list=None, field: str=None):
         self.field_freq = dict()
         self.preprocessors = dict()
         self.records = dict()
@@ -53,7 +51,7 @@ class Disamby(object):
                 raise ValueError("Preprocessor not provided")
             self.fit(data, preprocessors, field)
 
-    def fit(self, data: PandasObj, preprocessors: list, field: str = None):
+    def fit(self, data: PandasObj, preprocessors: list, field: str=None):
         """
         Computes the frequencies of the terms by field.
 
@@ -93,7 +91,7 @@ class Disamby(object):
         except AttributeError:
             self._fit_field(data, preprocessors=preprocessors, field=field)
 
-    def find(self, word: str, field, threshold=0.0, **kwargs):
+    def find(self, word: str, field, threshold=0.0, **kwargs) -> list:
         """
         returns the list of scored instances which have a score above the
         threshold. Note that strings which do not share any token are omitted
@@ -156,7 +154,7 @@ class Disamby(object):
 
         if set(fields) != set(self.field_freq.keys()):
             raise ValueError("Not all fields have been fitted (i.e. computed"
-                             "their frequency.")
+                             "their frequency).")
 
         if weight is None:
             weight = {f: 1 / len(fields) for f in fields}
@@ -195,7 +193,7 @@ class Disamby(object):
         self.records[field] = []
         counter = Counter()
 
-        for i, name in enumerate(data):
+        for i, name in data.items():
             norm_tokens = self.pre_process(name, preprocessors)
             self._processed_token_cache[field][name] = norm_tokens
             counter.update(norm_tokens)
@@ -232,7 +230,7 @@ class Disamby(object):
 
         Notes
         -----
-        The score is not commutative (i.e. c(A,B)!=C(B,A))
+        The score is not commutative (i.e. score(A,B) != score(B,A))
         """
 
         try:
@@ -247,7 +245,7 @@ class Disamby(object):
         score = sum(weights.get(tok, 0) for tok in other_parts)
         return score
 
-    def id_potential(self, words: tuple, field: str,
+    def id_potential(self, term: Union[tuple, str], field: str,
                      smoother: str = None, offset=0) -> dict:
         """
         Computes the weights of the words based on the observed frequency
@@ -255,7 +253,8 @@ class Disamby(object):
 
         Parameters
         ----------
-        words : list
+        term : str, tuple
+            term to look for or a tuple of proper tokens
         field : str
             field the word falls under
         smoother : str (optional)
@@ -267,6 +266,10 @@ class Disamby(object):
         -------
         float
         """
+        if isinstance(term, str):
+            words = self.pre_process(term, self.preprocessors[field])
+        else:
+            words = term
 
         smoothers = {
             None: self._smooth_none,
@@ -359,3 +362,5 @@ class Disamby(object):
         max_offset = max(max_occ + offset + 1, 1)
         word_offset = max(occ + offset, 1)
         return log(max_offset / word_offset)
+
+

@@ -12,4 +12,4 @@ pytest-runner==2.11.1
 faker==0.7.17
 pandas==0.20.2
 sphinxcontrib-napoleon==0.6.1
-pytest-benchmark
+pytest-benchmark==3.0.0

@@ -4,7 +4,7 @@
 
 import click
 from disamby import Disamby
-import preprocessors as pre
+import disamby.preprocessors as pre
 import pandas as pd
 from networkx import strongly_connected_components
 import json

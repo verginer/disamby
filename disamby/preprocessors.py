@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+
+"""
+This module contains the various string preprocessors
+"""
 import re
 
 __all__ = ['compact_abbreviations', 'normalize_whitespace',
@@ -5,24 +10,24 @@ __all__ = ['compact_abbreviations', 'normalize_whitespace',
            'nword']
 
 
-re_abbreviation = re.compile(r'\.(?![a-zA-Z]*})')
-re_duplicate_white = re.compile('\s+')
-re_whitespace = re.compile('\s')
-re_punctuation = re.compile('[^\w\s]')
+_re_abbreviation = re.compile(r'\.(?![a-zA-Z]*})')
+_re_duplicate_white = re.compile('\s+')
+_re_whitespace = re.compile('\s')
+_re_punctuation = re.compile('[^\w\s]')
 
 
 def normalize_whitespace(string: str) -> str:
-    no_whitespace = re_duplicate_white.sub(' ', string.upper())
+    no_whitespace = _re_duplicate_white.sub(' ', string.upper())
     return no_whitespace.strip()
 
 
 def compact_abbreviations(string: str) -> str:
-    split = re_abbreviation.split(string.upper())
+    split = _re_abbreviation.split(string.upper())
     return ''.join(split)
 
 
 def remove_punctuation(word: str) -> str:
-    return re_punctuation.sub('', word)
+    return _re_punctuation.sub('', word)
 
 
 def ngram(string: str, n: int) -> tuple:
@@ -39,7 +44,7 @@ def trigram(string: str) -> tuple:
 
 
 def split_words(string: str) -> tuple:
-    return tuple(re_whitespace.split(string))
+    return tuple(_re_whitespace.split(string))
 
 
 def nword(word: str, k: int) -> tuple:

@@ -2,14 +2,14 @@
 
 """Main module."""
 from collections import Counter
-from typing import TypeVar, Union
+from typing import Union
 from pandas import DataFrame, Series
 from math import log
 from tqdm import tqdm
 from networkx import DiGraph
 from collections import namedtuple
 
-ScoredElement = namedtuple('ScoredElement', ['index', 'name', 'score'])
+ScoredElement = namedtuple('ScoredElement', ['index', 'score'])
 PandasObj = Union[DataFrame, Series]
 
 
@@ -91,7 +91,7 @@ class Disamby(object):
         except AttributeError:
             self._fit_field(data, preprocessors=preprocessors, field=field)
 
-    def find(self, word: str, field, threshold=0.0, **kwargs) -> list:
+    def find(self, idx, threshold=0.0, weights: dict=None, **kwargs) -> list:
         """
         returns the list of scored instances which have a score above the
         threshold. Note that strings which do not share any token are omitted
@@ -99,79 +99,45 @@ class Disamby(object):
 
         Parameters
         ----------
-        word
-        field
+        idx
+            index of the record to find
         threshold
+        weights : dict
 
         Returns
         -------
 
         """
-        own_tokens = self._processed_token_cache[field][word]
+        fields = self.fields
 
-        potential_candidates = set()
-        for token in own_tokens:
-            potential_candidates |= self._token_to_instance[field][token]
+        scored_candidates = dict()
+        if weights is None:
+            weights = {f: 1 / len(fields) for f in fields}
 
-        scored_candidates = []
-        for candidate in potential_candidates:
-            score = self.score(word, candidate[1], field, **kwargs)
-            if score >= threshold:
-                result = ScoredElement(candidate[0], candidate[1], score)
-                scored_candidates.append(result)
+        for field in fields:
+            own_term = self.records[field][idx]
+            own_tokens = self._processed_token_cache[field][own_term]
+            potential_candidates = set()
 
-        return scored_candidates
+            for token in own_tokens:
+                potential_candidates |= self._token_to_instance[field][token]
 
-    def pandas_score(self, index, data_frame,
-                     smoother=None, offset=0, weight=None):
-        """
-        For the given term compute the score given the dataframe
-        The column names of the dataframe are assumed to be the fields you
-        are interested in
+            for candidate in potential_candidates:
+                score = self.score(own_term, candidate[1], field, **kwargs)
+                candidate_idx = candidate[0]
+                if candidate_idx not in scored_candidates:
+                    scored_candidates[candidate_idx] = {field: score * weights[field]}
+                else:
+                    scored_candidates[candidate_idx][field] = score * weights[field]
 
-        Parameters
-        ----------
-        index :
-            index of the entry you want to filter on
-        data_frame
-        weight : dict
-            dict of the form {field1: w1, field2: w2}
-            the weight is is the weight to associate to the field in the final
-            score, defaults to 1/n
-        smoother : str (optional)
-            one of {None, 'offset', 'log'}
-        offset : int
-            offset to add to count only needed for smoothers 'log' and 'offset'
+        # compute weighted score
+        final_candidates = []
+        for idx, scores in scored_candidates.items():
+            total_score = sum(scores.values())
+            if total_score >= threshold:
+                final_candidates.append(ScoredElement(idx, total_score))
 
-        Returns
-        -------
-        DataFrame
-        """
-
-        fields = data_frame.columns
-        # TODO: make it work with series objects
-        own_record = data_frame.loc[index]
-
-        if set(fields) != set(self.field_freq.keys()):
-            raise ValueError("Not all fields have been fitted (i.e. computed"
-                             "their frequency).")
-
-        if weight is None:
-            weight = {f: 1 / len(fields) for f in fields}
-
-        def scoring_fun(record):
-            # TODO: make this use the faster find function
-            total_score = 0
-            for field in fields:
-                score = self.score(own_record[field],
-                                   record[field], field,
-                                   smoother=smoother,
-                                   offset=offset)
-                score *= weight[field]
-                total_score += score
-            return total_score
-
-        return scoring_fun
+        return final_candidates
 
     def _fit_field(self, data: PandasObj, preprocessors: list=None, field: str=None):
         if field not in self.preprocessors:
@@ -190,14 +156,14 @@ class Disamby(object):
         self.preprocessors[field] = preprocessors
         self._processed_token_cache[field] = dict()
         self._token_to_instance[field] = dict()
-        self.records[field] = []
+        self.records[field] = dict()
         counter = Counter()
 
         for i, name in data.items():
             norm_tokens = self.pre_process(name, preprocessors)
             self._processed_token_cache[field][name] = norm_tokens
             counter.update(norm_tokens)
-            self.records[field].append((i, name))
+            self.records[field][i] = name
             for token in norm_tokens:
                 if token in self._token_to_instance[field]:
                     self._token_to_instance[field][token] |= {(i, name)}
@@ -238,7 +204,7 @@ class Disamby(object):
             other_parts = self._processed_token_cache[field][other_term]
         except KeyError:
             own_parts = self.pre_process(term, self.preprocessors[field])
-            other_parts = self.pre_process(term, self.preprocessors[field])
+            other_parts = self.pre_process(other_term, self.preprocessors[field])
 
         # get list of potential scores
         weights = self.id_potential(own_parts, field, smoother, offset)
@@ -293,7 +259,7 @@ class Disamby(object):
         total_weight = sum(id_potentials.values())
         return {w: idp / total_weight for w, idp in id_potentials.items()}
 
-    def alias_graph(self, field, threshold=0.7, verbose=True, **kwargs) -> DiGraph:
+    def alias_graph(self, threshold=0.7, verbose=True, weights=None, **kwargs) -> DiGraph:
         """
         This function creates the directed network connecting an instance to an other
         through a directed edge if the the target instance has a similarity score above
@@ -301,7 +267,7 @@ class Disamby(object):
 
         Parameters
         ----------
-        field : str
+        weights
         threshold : float
             between 0 and 1
         verbose : whether to show the progressbar
@@ -313,27 +279,22 @@ class Disamby(object):
         DiGraph
 
         """
-        # TODO: make it independent from field and make it work with all fields at once
-        # remember this is the way to go to make it work with street addresses
-
         if not verbose:
             t = lambda x: x
         else:
             t = tqdm
 
         edges = []
-        nodes = []
-        for idx, name in t(self.records[field]):
-            targets = self.find(name, field=field, threshold=threshold, **kwargs)
-            new_edges = [(idx, x.index, {'weight': x.score})
+        fields = self.records.keys()
+        a_field = list(fields)[0]
+        for idx in t(self.records[a_field]):
+            targets = self.find(idx, threshold=threshold, weights=weights, **kwargs)
+            new_edges = [(idx, x.index, {'score': x.score})
                          for x in targets if x.index != idx
                          ]
-            new_nodes = [(x.index, {field: x.name}) for x in targets]
             edges.extend(new_edges)
-            nodes.extend(new_nodes)
 
         alias_graph = DiGraph()
-        alias_graph.add_nodes_from(nodes)
         alias_graph.add_edges_from(edges)
         return alias_graph
 

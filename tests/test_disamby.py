@@ -69,12 +69,10 @@ def test_find(company_df):
     assert score_of_searched == pytest.approx(1)
 
 
-def test_alias_graph(company_df):
-    from networkx import strongly_connected_components
+def test_disambiguated_tests(company_df):
     df = company_df(200)
     dis = Disamby(df, preprocessors=pipeline)
-    graph = dis.alias_graph(verbose=True, threshold=0.7,
-                            weights={'name': .99, 'address': .01}
-                            )
-    components = strongly_connected_components(graph)
+    components = dis.disambiguated_sets(verbose=True, threshold=.7,
+                                        weights={'name': .99, 'address': .01}
+                                        )
     assert max(len(c) for c in components) == 2

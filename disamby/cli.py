@@ -15,7 +15,8 @@ import json
 @click.command(help="""
 This command allows to disambiguate a csv file using `disamby`
 example usage:\n
-$ python disamby/cli.py -c name -i inv_id -t .7 -p APNX name.csv dis_name.json
+$ disamby -c name -i inv_id -t .7 -p APNX name.csv dis_name.json
+$ disamby -c name -i inv_id -t .7 -p APNX name.csv dis_name.json
 
 The prep codes are:\n
 'A': pre.compact_abbreviations\n

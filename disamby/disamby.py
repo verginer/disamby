@@ -26,17 +26,21 @@ class Disamby(object):
 
     Examples
     --------
-
     >>> import pandas as pd
-    >>> from disamby.preprocessors import split_words, normalize_whitespace
+    >>> import disamby.preprocessors as pre
     >>> df = pd.DataFrame(
-    ... {'a': ['Luca Georger', 'Luke Geroge', 'Adrian Sulzer'],
+    ... {'a': ['Luca Georger', 'Luca Geroger', 'Adrian Sulzer'],
     ... 'b': ['Mira, 34, Augsburg', 'Miri, 34, Augsburg', 'Milano, 34']
-    ... })
-    >>> prep = [normalize_whitespace, split_words]
-    >>> dis = Disamby(df, prep)
-    >>> dis.pandas_score(0, df, smoother='log').values
-    array([ 1.,  0.25,  0.])
+    ... }, index=['L1', 'L2', 'O1']
+    ... )
+    >>> pipeline = [
+    ...     pre.normalize_whitespace,
+    ...     pre.remove_punctuation,
+    ...     pre.trigram
+    ... ]
+    >>> dis = Disamby(df, pipeline)
+    >>> dis.disambiguated_sets(threshold=0.5, verbose=False)
+    [{'L2', 'L1'}, {'O1'}]
     """
 
     def __init__(self, data: PandasObj=None, preprocessors: list=None, field: str=None):
@@ -80,9 +84,6 @@ class Disamby(object):
         >>> dis = Disamby()
         >>> prep = [split_words]
         >>> dis.fit(df, prep)
-        >>> df_scores = dis.pandas_score(0, df)
-        >>> df_scores.values
-        array([ 1.,  0.,  0.])
         """
         try:
             columns = data.columns
@@ -289,14 +290,18 @@ class Disamby(object):
         a_field = list(fields)[0]
         for idx in t(self.records[a_field]):
             targets = self.find(idx, threshold=threshold, weights=weights, **kwargs)
-            new_edges = [(idx, x.index, {'score': x.score})
-                         for x in targets if x.index != idx
-                         ]
+            new_edges = [(idx, x.index, {'score': x.score}) for x in targets]
             edges.extend(new_edges)
 
         alias_graph = DiGraph()
         alias_graph.add_edges_from(edges)
         return alias_graph
+
+    def disambiguated_sets(self, threshold=0.7, verbose=True, weights=None, **kwargs):
+        from networkx import strongly_connected_components
+        alias_graph = self.alias_graph(threshold, verbose, weights, **kwargs)
+        strong = strongly_connected_components(alias_graph)
+        return list(strong)
 
     @staticmethod
     def pre_process(base_name, functions: list):

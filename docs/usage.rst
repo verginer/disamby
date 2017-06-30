@@ -28,3 +28,4 @@ To use disamby in a project::
 
     dis.disambiguated_sets(threshold=0.5, verbose=False)
     [{'L2', 'L1'}, {'O1'}]
+

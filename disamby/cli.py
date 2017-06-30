@@ -35,7 +35,7 @@ The prep codes are:\n
 @click.option('-t', '--threshold', type=click.FLOAT, default=0.7,
               help='Minimum score to be counted')
 @click.option('-i', '--index', type=click.STRING, help='name of index column')
-@click.option('-p', '--prep', type=click.STRING, default='APNX',
+@click.option('-p', '--prep', type=click.STRING, default='APWX',
               help='pre-processing instructions, if left blank will default to a standard'
                    ' prep')
 def main(data, output, index, colname, prep, threshold):
@@ -53,9 +53,8 @@ def main(data, output, index, colname, prep, threshold):
     }
     pipeline = [prep_dict[action] for action in list(prep)]
     dis = Disamby(data=names_df[colname], preprocessors=pipeline)
-    alias_graph = dis.alias_graph(colname, threshold, smoother='offset', offset=100)
+    components = dis.disambiguated_sets(threshold, smoother='offset', offset=100)
 
-    components = strongly_connected_components(alias_graph)
     comp_to_id = dict()
     for comp in components:
         members = list(comp)

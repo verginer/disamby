@@ -6,7 +6,6 @@ import click
 from disamby import Disamby
 import disamby.preprocessors as pre
 import pandas as pd
-from networkx import strongly_connected_components
 import json
 
 # TODO: Make tests for cli
@@ -40,7 +39,7 @@ The prep codes are:\n
                    ' prep')
 def main(data, output, index, colname, prep, threshold):
     """Console script for disamby."""
-    names_df = pd.read_csv(data, index_col=index).sample(1000)
+    names_df = pd.read_csv(data, index_col=index)
     prep_dict = {
         'A': pre.compact_abbreviations,
         'P': pre.remove_punctuation,

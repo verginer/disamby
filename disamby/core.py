@@ -281,7 +281,8 @@ class Disamby(object):
 
         """
         if not verbose:
-            t = lambda x: x
+            def t(x):
+                return x
         else:
             t = tqdm
 
@@ -328,5 +329,3 @@ class Disamby(object):
         max_offset = max(max_occ + offset + 1, 1)
         word_offset = max(occ + offset, 1)
         return log(max_offset / word_offset)
-
-

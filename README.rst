@@ -17,24 +17,74 @@ disamby
      :target: https://pyup.io/repos/github/verginer/disamby/
      :alt: Updates
 
-
-Python package to carry out entity disambiguation based on string matching
-
-
 * Free software: MIT license
 * Documentation: https://disamby.readthedocs.io.
 
+``disamby`` is a python package designed to carry out entity disambiguation based on fuzzy
+string matching.
 
-Features
---------
+It works best for entities which if the same have very similar strings.
+Examples of situation where this disambiguation algorithm works fairly well is with
+company names and addresses which have typos, alternative spellings or composite names.
+Other use-cases include identifying people in a database where the name might be misspelled.
 
-* TODO
+The algorithm works by exploiting how informative a given word/token is, based on the
+observed frequencies in the whole corpus of strings. For example the word 'inc' in the
+case of firm names is not very informative, however "Solomon" is, since the former appears
+repeatedly whereas the second rarely.
+
+With these frequencies the algorithms computes for a given pair of instances how similar
+they are, and if they are above an arbitrary threshold they are connected in an
+"alias graph" (i.e. a directed network where an entity is connected to an other
+if it is similar enough). After all records have been connected in this way disamby
+returns sets of entities, which are strongly connected [2]_ . Strongly connected means
+in this case that there exists a path from all nodes to all nodes within the component.
+
+
+Example
+-------
+
+To use disamby in a project::
+
+    import pandas as pd
+    import disamby.preprocessors as pre
+    form disamby import Disamby
+
+    # create a dataframe with the fields you intend to match on as columns
+    df = pd.DataFrame({
+        'name':     ['Luca Georger',        'Luca Geroger',         'Adrian Sulzer'],
+        'address':  ['Mira, 34, Augsburg',  'Miri, 34, Augsburg',   'Milano, 34']},
+        index=      ['L1',                  'L2',                   'O1']
+    )
+
+    # define the pipeline to process the strings, note that the last step must return
+    # a tuple of strings
+    pipeline = [
+        pre.normalize_whitespace,
+        pre.remove_punctuation,
+        lambda x: pre.trigram(x) + pre.split_words(x)  # any python function is allowed
+    ]
+
+    # instantiate the disamby object, it applies the given pre-processing pipeline and
+    # computes their frequency.
+    dis = Disamby(df, pipeline)
+
+    # let disamby compute disambiguated sets. Node that a threshold must be given or it
+    # defaults to 0.
+    dis.disambiguated_sets(threshold=0.5)
+    [{'L2', 'L1'}, {'O1'}]  # output
+
+    # To check if the sets are accurate you can get the rows from the
+    # pandas dataframe like so:
+    df.loc[['L2', 'L1']]
+
 
 Credits
 ---------
+I got the inspiration for this package from the seminar "The SearchEngine - A Tool for
+Matching by Fuzzy Criteria" by Thorsten Doherr at the CISS [1]_ Summer School 2017
 
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-
+.. [1] http://www.euro-ciss.eu/ciss/home.html
+.. [2] https://en.wikipedia.org/wiki/Strongly_connected_component

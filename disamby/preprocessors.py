@@ -1,7 +1,8 @@
 import re
 
 __all__ = ['compact_abbreviations', 'normalize_whitespace',
-           'ngram', 'trigram', 'split_words', 'remove_punctuation']
+           'ngram', 'trigram', 'split_words', 'remove_punctuation',
+           'nword']
 
 
 re_abbreviation = re.compile(r'\.(?![a-zA-Z]*})')
@@ -18,6 +19,10 @@ def normalize_whitespace(string: str) -> str:
 def compact_abbreviations(string: str) -> str:
     split = re_abbreviation.split(string.upper())
     return ''.join(split)
+
+
+def remove_punctuation(word: str) -> str:
+    return re_punctuation.sub('', word)
 
 
 def ngram(string: str, n: int) -> tuple:
@@ -37,5 +42,10 @@ def split_words(string: str) -> tuple:
     return tuple(re_whitespace.split(string))
 
 
-def remove_punctuation(word: str) -> str:
-    return re_punctuation.sub('', word)
+def nword(word: str, k: int) -> tuple:
+    """concatenates k consecutive words into a tuple"""
+    parts = word.split(' ')
+    n = len(parts)
+    k = min(k, n)
+    sequences = tuple(''.join(parts[i:i + k]) for i in range(n - k + 1))
+    return sequences

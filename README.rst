@@ -81,10 +81,9 @@ To use disamby in a project::
 
 Credits
 ---------
+
 I got the inspiration for this package from the seminar "The SearchEngine - A Tool for
 Matching by Fuzzy Criteria" by Thorsten Doherr at the CISS [1]_ Summer School 2017
-
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 .. [1] http://www.euro-ciss.eu/ciss/home.html
 .. [2] https://en.wikipedia.org/wiki/Strongly_connected_component

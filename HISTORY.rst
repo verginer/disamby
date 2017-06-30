@@ -8,7 +8,7 @@ History
 * working release with minimal documentation
 * works with multiple field matching
 * carries out all steps autonomously from string pre-processing to
-identifying the strongly connected components
+  identifying the strongly connected components
 
 
 0.1.0 (2017-06-24)

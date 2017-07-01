@@ -13,4 +13,4 @@ faker==0.7.17
 pandas==0.20.2
 sphinxcontrib-napoleon==0.6.1
 pytest-benchmark==3.0.0
-tqdm
+tqdm==4.14.0

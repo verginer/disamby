@@ -76,3 +76,9 @@ def test_disambiguated_tests(company_df):
                                         weights={'name': .99, 'address': .01}
                                         )
     assert max(len(c) for c in components) == 2
+
+
+def test_two_identical_columns(company_df):
+    df = company_df(20)
+    with pytest.raises(KeyError):
+        dis = Disamby(df[['name', 'name']], pipeline)

@@ -87,10 +87,15 @@ class Disamby(object):
         """
         try:
             columns = data.columns
-            for col in columns:
-                self._fit_field(data[col], preprocessors=preprocessors)
+            unique_columns = len(set(columns)) == len(columns)
+            if not unique_columns:
+                raise KeyError("Some columns have identical names")
         except AttributeError:
             self._fit_field(data, preprocessors=preprocessors, field=field)
+            return None
+
+        for col in columns:
+            self._fit_field(data[col], preprocessors=preprocessors)
 
     def find(self, idx, threshold=0.0, weights: dict=None, **kwargs) -> list:
         """
@@ -159,6 +164,10 @@ class Disamby(object):
         self._token_to_instance[field] = dict()
         self.records[field] = dict()
         counter = Counter()
+
+        sample_item = data.iloc[0]
+        if not isinstance(sample_item, str):
+            raise ValueError('type of field/column "%s" is not `str`' % field)
 
         for i, name in data.items():
             norm_tokens = self.pre_process(name, preprocessors)

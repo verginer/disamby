@@ -4,6 +4,6 @@
 
 __author__ = """Luca Verginer"""
 __email__ = 'luca@verginer.eu'
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 
 from .core import Disamby

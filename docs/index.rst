@@ -1,21 +1,18 @@
-Welcome to disamby's documentation!
-======================================
 
-Contents:
+.. include:: ../README.rst
+
+
+Indices and tables
+==================
 
 .. toctree::
    :maxdepth: 2
 
-   readme
-   installation
-   usage
    modules
    contributing
    authors
    history
 
-Indices and tables
-==================
 
 * :ref:`genindex`
 * :ref:`modindex`

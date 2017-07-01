@@ -25,9 +25,10 @@ def company_df(fake_names):
     """test company details"""
     def df_of_size(size):
         np.random.seed(size)
+        fk_names = fake_names(size)
         assignee_path = os.path.join(DATA_DIR, 'potential_assginees_names.csv')
         sample = pd.read_csv(assignee_path, index_col='inv_id').sample(size)
-        sample['address'] = fake_names(size)
+        sample['address'] = fk_names
         del sample['patents']
         return sample
     return df_of_size

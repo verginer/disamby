@@ -61,10 +61,10 @@ def test_instant_instantiation(company_df):
 def test_find(company_df):
     df = company_df(100)
     dis = Disamby(df, pipeline)
-    term = list(dis.records['address'].keys())[0]
-    results = dis.find(term, threshold=0.001, weights={'name': .2, 'address': .8})
+    term = list(sorted(dis.records['address'].keys()))[0]
+    results = dis.find(term, threshold=0, weights={'name': .2, 'address': .8})
 
-    assert len(results) == 42
+    assert len(results) == 31
     score_of_searched = max(x.score for x in results)
     assert score_of_searched == pytest.approx(1)
 

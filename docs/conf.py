@@ -16,6 +16,15 @@
 import sys
 import os
 
+# mock out import statements
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(self, name):
+        return MagicMock()
+
+MOCK_MODULES = ['pandas', 'tqdm', 'networkx', 'numpy']
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is

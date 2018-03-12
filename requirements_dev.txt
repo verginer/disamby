@@ -11,6 +11,6 @@ pytest-runner==2.12.1
 faker==0.8.3
 pandas==0.20.3
 sphinxcontrib-napoleon==0.6.1
-tqdm==4.15.0
+tqdm==4.19.7
 pytest-benchmark==3.1.1
 networkx==2.0

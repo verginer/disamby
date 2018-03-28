@@ -49,6 +49,8 @@ To use disamby in a project::
     import pandas as pd
     import disamby.preprocessors as pre
     form disamby import Disamby
+    
+.. code-block:: python
 
     # create a dataframe with the fields you intend to match on as columns
     df = pd.DataFrame({

@@ -8,7 +8,7 @@ coverage==4.4.1
 Sphinx==1.7.2
 pytest==3.5.0
 pytest-runner==4.2
-faker==0.8.3
+faker==0.8.12
 pandas==0.20.3
 sphinxcontrib-napoleon==0.6.1
 tqdm==4.19.9

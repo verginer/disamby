@@ -5,12 +5,12 @@ watchdog==0.8.3
 flake8==3.5.0
 tox==3.0.0
 coverage==4.5.1
-Sphinx==1.7.3
+Sphinx==1.7.4
 pytest==3.5.1
 pytest-runner==4.2
 faker==0.8.13
 pandas==0.22.0
 sphinxcontrib-napoleon==0.6.1
-tqdm==4.22.0
+tqdm==4.23.1
 pytest-benchmark==3.1.1
 networkx==2.1

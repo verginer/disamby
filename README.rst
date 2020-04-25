@@ -2,6 +2,9 @@
 disamby
 =======
 
+[ ~ Dependencies scanned by PyUp.io ~ ]
+
+
 
 .. image:: https://img.shields.io/pypi/v/disamby.svg
         :target: https://pypi.python.org/pypi/disamby
